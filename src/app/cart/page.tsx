@@ -4,13 +4,11 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCart } from "@/lib/cart-context";
 import { useAuth } from "@/lib/auth-context";
-
-function formatToman(amount: number) {
-  return amount.toLocaleString("fa-IR") + " تومان";
-}
+import { formatToman, faNum } from "@/lib/format";
+import { CartIcon, MinusIcon, PlusIcon, TrashIcon } from "@/components/icons";
 
 export default function CartPage() {
-  const { items, updateQuantity, removeItem, totalAmount, clearCart } = useCart();
+  const { items, updateQuantity, removeItem, totalAmount, clearCart, totalCount } = useCart();
   const { user, loading } = useAuth();
   const router = useRouter();
 
@@ -23,89 +21,118 @@ export default function CartPage() {
   }
 
   return (
-    <main className="mx-auto max-w-5xl px-4 py-12">
-      <h1 className="mb-8 text-2xl font-extrabold text-white">
-        🛒 سبد <span className="gradient-text">خرید</span>
-      </h1>
+    <main className="mx-auto max-w-5xl px-4 py-10">
+      <div className="mb-8 flex items-center justify-between">
+        <h1 className="text-xl font-black text-white sm:text-2xl">
+          سبد <span className="gradient-text">خرید</span>
+        </h1>
+        {items.length > 0 && (
+          <span className="rounded-full border border-[rgba(148,184,220,0.16)] bg-white/5 px-3.5 py-1.5 text-xs font-bold text-[var(--muted)]">
+            {faNum(totalCount)} کالا
+          </span>
+        )}
+      </div>
 
       {items.length === 0 ? (
-        <div className="glass-card rounded-3xl p-14 text-center">
-          <p className="text-5xl">🛍️</p>
-          <p className="mt-4 text-violet-100/70">سبد خرید شما خالی است.</p>
-          <Link href="/" className="btn-glow mt-6 inline-block rounded-xl px-6 py-3 text-sm font-bold text-white">
+        <div className="glass-card fade-in-up rounded-3xl p-14 text-center">
+          <span className="mx-auto grid h-20 w-20 place-items-center rounded-3xl bg-amber-400/10 text-amber-400">
+            <CartIcon className="h-9 w-9" />
+          </span>
+          <p className="mt-5 font-bold text-white">سبد خرید شما خالی است</p>
+          <p className="mt-2 text-sm text-[var(--muted)]">
+            از ویترین محصولات، تجهیزات موردنیازتان را اضافه کنید.
+          </p>
+          <Link href="/#shop" className="btn-primary mt-6 inline-flex rounded-xl px-6 py-3 text-sm">
             مشاهده محصولات
           </Link>
         </div>
       ) : (
         <div className="grid gap-6 lg:grid-cols-3">
-          <div className="space-y-4 lg:col-span-2">
+          <div className="space-y-3 lg:col-span-2">
             {items.map((item) => (
               <div
                 key={item.productId}
-                className="glass-card flex items-center gap-4 rounded-2xl p-4"
+                className="glass-card fade-in-up flex items-center gap-3 rounded-2xl p-3 sm:gap-4 sm:p-4"
               >
-                <div className="h-20 w-20 shrink-0 overflow-hidden rounded-xl bg-gradient-to-br from-violet-900/50 to-fuchsia-900/30">
+                <div className="product-stage relative h-20 w-20 shrink-0 overflow-hidden rounded-xl sm:h-24 sm:w-24">
                   {item.imageUrl ? (
                     // eslint-disable-next-line @next/next/no-img-element
-                    <img src={item.imageUrl} alt={item.name} className="h-full w-full object-cover" />
+                    <img
+                      src={item.imageUrl}
+                      alt={item.name}
+                      className="mix-blend-multiply h-full w-full object-contain p-1.5"
+                    />
                   ) : (
                     <div className="grid h-full w-full place-items-center text-2xl">🛍️</div>
                   )}
                 </div>
+
                 <div className="min-w-0 flex-1">
-                  <p className="truncate font-bold text-white">{item.name}</p>
-                  <p className="text-xs text-cyan-300">کد {item.code.toLocaleString("fa-IR")}</p>
-                  <p className="mt-1 text-sm text-violet-100/60">{formatToman(item.price)}</p>
+                  <p className="truncate text-sm font-extrabold text-white sm:text-base">
+                    {item.name}
+                  </p>
+                  <p className="mt-0.5 text-[11px] text-[var(--muted)]">
+                    کد {faNum(item.code)} • {formatToman(item.price)}
+                  </p>
+                  <p className="mt-1 text-sm font-black text-amber-300">
+                    {formatToman(item.price * item.quantity)}
+                  </p>
                 </div>
-                <div className="flex items-center gap-2">
+
+                <div className="flex flex-col items-end gap-2">
+                  <div className="stepper-pill">
+                    <button
+                      onClick={() => updateQuantity(item.productId, item.quantity + 1)}
+                      aria-label="افزودن یک عدد"
+                      className="stepper-btn stepper-plus"
+                    >
+                      <PlusIcon className="h-4 w-4" />
+                    </button>
+                    <span className="min-w-7 text-center text-base font-black text-white">
+                      {faNum(item.quantity)}
+                    </span>
+                    <button
+                      onClick={() => updateQuantity(item.productId, item.quantity - 1)}
+                      aria-label="کاهش یک عدد"
+                      className="stepper-btn stepper-minus"
+                    >
+                      <MinusIcon className="h-4 w-4" />
+                    </button>
+                  </div>
                   <button
-                    onClick={() => updateQuantity(item.productId, item.quantity - 1)}
-                    className="h-8 w-8 rounded-lg border border-white/10 bg-white/5 text-white hover:bg-white/10"
+                    onClick={() => removeItem(item.productId)}
+                    className="flex items-center gap-1 rounded-lg px-2 py-1 text-[11px] font-bold text-rose-300 transition hover:bg-rose-500/10"
                   >
-                    −
-                  </button>
-                  <span className="w-6 text-center font-bold text-white">
-                    {item.quantity.toLocaleString("fa-IR")}
-                  </span>
-                  <button
-                    onClick={() => updateQuantity(item.productId, item.quantity + 1)}
-                    className="h-8 w-8 rounded-lg border border-white/10 bg-white/5 text-white hover:bg-white/10"
-                  >
-                    +
+                    <TrashIcon className="h-3.5 w-3.5" />
+                    حذف
                   </button>
                 </div>
-                <button
-                  onClick={() => removeItem(item.productId)}
-                  className="rounded-lg px-2 py-1 text-sm text-rose-300 hover:bg-rose-500/10"
-                >
-                  حذف
-                </button>
               </div>
             ))}
             <button
               onClick={clearCart}
-              className="text-sm text-violet-100/50 underline-offset-2 hover:text-rose-300 hover:underline"
+              className="text-xs font-bold text-[var(--muted)] underline-offset-4 transition hover:text-rose-300 hover:underline"
             >
               خالی کردن سبد خرید
             </button>
           </div>
 
-          <div className="glass-card neon-border h-fit rounded-3xl p-6">
-            <h2 className="mb-4 text-lg font-bold text-white">خلاصه سفارش</h2>
-            <div className="flex items-center justify-between text-sm text-violet-100/70">
+          <div className="glass-card fade-in-up h-fit rounded-3xl p-5 sm:p-6">
+            <h2 className="mb-4 text-base font-black text-white">خلاصه سفارش</h2>
+            <div className="flex items-center justify-between text-sm text-[var(--muted)]">
               <span>تعداد اقلام</span>
-              <span>{items.reduce((s, i) => s + i.quantity, 0).toLocaleString("fa-IR")}</span>
+              <span className="font-bold text-white">{faNum(totalCount)}</span>
             </div>
-            <div className="mt-2 flex items-center justify-between border-t border-white/10 pt-3 text-base font-bold text-white">
-              <span>مبلغ قابل پرداخت</span>
-              <span className="gradient-text">{formatToman(totalAmount)}</span>
+            <div className="mt-3 flex items-center justify-between border-t border-[rgba(148,184,220,0.14)] pt-3">
+              <span className="text-sm font-bold text-white">مبلغ قابل پرداخت</span>
+              <span className="text-base font-black text-amber-300">{formatToman(totalAmount)}</span>
             </div>
-            <button
-              onClick={goCheckout}
-              className="btn-glow mt-6 w-full rounded-xl py-3 text-sm font-bold text-white"
-            >
-              ادامه فرایند خرید ←
+            <button onClick={goCheckout} className="btn-primary mt-6 w-full rounded-xl py-3.5 text-sm">
+              ادامه فرایند خرید
             </button>
+            <p className="mt-3 text-center text-[11px] leading-5 text-[var(--muted)]">
+              در مرحله بعد اطلاعات گیرنده و فیش واریزی را ثبت می‌کنید.
+            </p>
           </div>
         </div>
       )}

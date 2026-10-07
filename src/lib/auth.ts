@@ -62,7 +62,13 @@ export async function getSessionUserId(): Promise<number | null> {
 export async function getCurrentUser() {
   const userId = await getSessionUserId();
   if (!userId) return null;
-  const rows = await db.select().from(users).where(eq(users.id, userId)).limit(1);
+  let rows;
+  try {
+    rows = await db.select().from(users).where(eq(users.id, userId)).limit(1);
+  } catch {
+    // database unreachable (e.g. during cold start) — treat as signed out
+    return null;
+  }
   const user = rows[0];
   if (!user) return null;
   return {

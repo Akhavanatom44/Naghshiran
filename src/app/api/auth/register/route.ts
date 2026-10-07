@@ -36,16 +36,24 @@ export async function POST(req: Request) {
 
   const { username, password, fullName, phone } = parsed.data;
 
-  const existing = await db.select().from(users).where(eq(users.username, username)).limit(1);
-  if (existing.length > 0) {
-    return Response.json({ error: "این نام کاربری قبلاً ثبت شده است" }, { status: 409 });
-  }
+  let inserted;
+  try {
+    const existing = await db.select().from(users).where(eq(users.username, username)).limit(1);
+    if (existing.length > 0) {
+      return Response.json({ error: "این نام کاربری قبلاً ثبت شده است" }, { status: 409 });
+    }
 
-  const passwordHash = await hashPassword(password);
-  const inserted = await db
-    .insert(users)
-    .values({ username, passwordHash, fullName, phone })
-    .returning({ id: users.id });
+    const passwordHash = await hashPassword(password);
+    inserted = await db
+      .insert(users)
+      .values({ username, passwordHash, fullName, phone })
+      .returning({ id: users.id });
+  } catch {
+    return Response.json(
+      { error: "سرویس احراز هویت موقتاً در دسترس نیست؛ لطفاً دوباره تلاش کنید" },
+      { status: 503 }
+    );
+  }
 
   const userId = inserted[0].id;
   await setSessionCookie(userId);

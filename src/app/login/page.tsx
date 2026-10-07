@@ -4,6 +4,8 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
+import AuthShell from "@/components/AuthShell";
+import { LockIcon, ShieldIcon, UserIcon } from "@/components/icons";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -39,62 +41,68 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="mx-auto flex min-h-[75vh] max-w-md items-center px-4 py-16">
-      <div className="w-full glass-card neon-border rounded-3xl p-8 fade-in-up">
-        <h1 className="mb-2 text-center text-2xl font-extrabold text-white">
-          ورود به <span className="gradient-text">حساب کاربری</span>
-        </h1>
-        <p className="mb-6 text-center text-sm text-violet-100/60">
-          برای ثبت سفارش و پیگیری خرید خود وارد شوید
-        </p>
+    <AuthShell>
+      <h1 className="text-2xl font-black text-white">ورود به حساب کاربری</h1>
+      <p className="mt-2 text-sm leading-6 text-[var(--muted)]">
+        برای ثبت سفارش، ارسال فیش واریزی و پیگیری خرید خود وارد شوید.
+      </p>
 
-        <form onSubmit={onSubmit} className="space-y-4">
-          <div>
-            <label className="mb-1 block text-sm font-semibold text-violet-100/80">نام کاربری</label>
+      <form onSubmit={onSubmit} className="mt-7 space-y-4">
+        <div>
+          <label className="mb-1.5 block text-xs font-bold text-[var(--muted)]">نام کاربری</label>
+          <div className="relative">
+            <UserIcon className="pointer-events-none absolute left-3.5 top-1/2 h-4.5 w-4.5 -translate-y-1/2 text-[var(--muted)]" />
             <input
               required
               value={username}
               onChange={(e) => setUsername(e.target.value)}
-              className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-white outline-none transition focus:border-fuchsia-400/60 focus:ring-2 focus:ring-fuchsia-400/30"
+              className="input-field with-icon text-left"
               placeholder="username"
               dir="ltr"
+              autoComplete="username"
             />
           </div>
-          <div>
-            <label className="mb-1 block text-sm font-semibold text-violet-100/80">رمز عبور</label>
+        </div>
+
+        <div>
+          <label className="mb-1.5 block text-xs font-bold text-[var(--muted)]">رمز عبور</label>
+          <div className="relative">
+            <LockIcon className="pointer-events-none absolute left-3.5 top-1/2 h-4.5 w-4.5 -translate-y-1/2 text-[var(--muted)]" />
             <input
               required
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-white outline-none transition focus:border-fuchsia-400/60 focus:ring-2 focus:ring-fuchsia-400/30"
+              className="input-field with-icon text-left"
               placeholder="••••••••"
               dir="ltr"
+              autoComplete="current-password"
             />
           </div>
+        </div>
 
-          {error && (
-            <p className="rounded-xl border border-rose-400/40 bg-rose-500/10 px-3 py-2 text-sm text-rose-300">
-              {error}
-            </p>
-          )}
+        {error && (
+          <p className="rounded-xl border border-rose-400/40 bg-rose-500/10 px-3.5 py-2.5 text-sm text-rose-300">
+            {error}
+          </p>
+        )}
 
-          <button
-            type="submit"
-            disabled={loading}
-            className="btn-glow w-full rounded-xl py-3 text-sm font-bold text-white disabled:opacity-60"
-          >
-            {loading ? "در حال ورود..." : "ورود"}
-          </button>
-        </form>
+        <button type="submit" disabled={loading} className="btn-primary w-full rounded-xl py-3.5 text-sm">
+          {loading ? "در حال ورود..." : "ورود به حساب"}
+        </button>
+      </form>
 
-        <p className="mt-6 text-center text-sm text-violet-100/60">
-          حساب کاربری ندارید؟{" "}
-          <Link href="/register" className="font-bold text-fuchsia-300 hover:underline">
-            ثبت‌نام کنید
-          </Link>
-        </p>
+      <p className="mt-5 flex items-center justify-center gap-1.5 text-center text-[11px] text-[var(--muted)]">
+        <ShieldIcon className="h-4 w-4 text-teal-300" />
+        نشست شما به‌صورت امن و رمزنگاری‌شده نگهداری می‌شود.
+      </p>
+
+      <div className="mt-6 border-t border-[rgba(148,184,220,0.14)] pt-5 text-center text-sm text-[var(--muted)]">
+        حساب کاربری ندارید؟{" "}
+        <Link href="/register" className="font-black text-amber-300 transition hover:text-amber-200">
+          در نقشیران ثبت‌نام کنید
+        </Link>
       </div>
-    </main>
+    </AuthShell>
   );
 }

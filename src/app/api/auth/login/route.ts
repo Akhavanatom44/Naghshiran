@@ -25,7 +25,16 @@ export async function POST(req: Request) {
   }
 
   const { username, password } = parsed.data;
-  const rows = await db.select().from(users).where(eq(users.username, username)).limit(1);
+
+  let rows;
+  try {
+    rows = await db.select().from(users).where(eq(users.username, username)).limit(1);
+  } catch {
+    return Response.json(
+      { error: "سرویس احراز هویت موقتاً در دسترس نیست؛ لطفاً دوباره تلاش کنید" },
+      { status: 503 }
+    );
+  }
   const user = rows[0];
 
   if (!user) {

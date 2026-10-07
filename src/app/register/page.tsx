@@ -4,6 +4,8 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
+import AuthShell from "@/components/AuthShell";
+import { LockIcon, PhoneIcon, ShieldIcon, UserIcon } from "@/components/icons";
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -38,83 +40,95 @@ export default function RegisterPage() {
   }
 
   return (
-    <main className="mx-auto flex min-h-[75vh] max-w-md items-center px-4 py-16">
-      <div className="w-full glass-card neon-border rounded-3xl p-8 fade-in-up">
-        <h1 className="mb-2 text-center text-2xl font-extrabold text-white">
-          ساخت <span className="gradient-text">حساب کاربری</span>
-        </h1>
-        <p className="mb-6 text-center text-sm text-violet-100/60">
-          با یک نام کاربری و رمز عبور، خرید خود را شروع کنید
-        </p>
+    <AuthShell>
+      <h1 className="text-2xl font-black text-white">ساخت حساب کاربری</h1>
+      <p className="mt-2 text-sm leading-6 text-[var(--muted)]">
+        با یک حساب رسمی در نقشیران، خرید و پیگیری سفارش‌هایتان را آغاز کنید.
+      </p>
 
-        <form onSubmit={onSubmit} className="space-y-4">
-          <div>
-            <label className="mb-1 block text-sm font-semibold text-violet-100/80">نام و نام خانوادگی</label>
+      <form onSubmit={onSubmit} className="mt-7 grid gap-4 sm:grid-cols-2">
+        <div>
+          <label className="mb-1.5 block text-xs font-bold text-[var(--muted)]">نام و نام خانوادگی</label>
+          <div className="relative">
+            <UserIcon className="pointer-events-none absolute left-3.5 top-1/2 h-4.5 w-4.5 -translate-y-1/2 text-[var(--muted)]" />
             <input
               required
               value={form.fullName}
               onChange={(e) => setForm((f) => ({ ...f, fullName: e.target.value }))}
-              className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-white outline-none transition focus:border-fuchsia-400/60 focus:ring-2 focus:ring-fuchsia-400/30"
+              className="input-field with-icon"
               placeholder="مثلاً علی رضایی"
+              autoComplete="name"
             />
           </div>
-          <div>
-            <label className="mb-1 block text-sm font-semibold text-violet-100/80">شماره تلفن</label>
+        </div>
+        <div>
+          <label className="mb-1.5 block text-xs font-bold text-[var(--muted)]">شماره تلفن</label>
+          <div className="relative">
+            <PhoneIcon className="pointer-events-none absolute left-3.5 top-1/2 h-4.5 w-4.5 -translate-y-1/2 text-[var(--muted)]" />
             <input
               required
               value={form.phone}
               onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))}
-              className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-white outline-none transition focus:border-fuchsia-400/60 focus:ring-2 focus:ring-fuchsia-400/30"
+              className="input-field with-icon text-left"
               placeholder="09xxxxxxxxx"
               dir="ltr"
+              inputMode="tel"
+              autoComplete="tel"
             />
           </div>
-          <div>
-            <label className="mb-1 block text-sm font-semibold text-violet-100/80">نام کاربری</label>
-            <input
-              required
-              value={form.username}
-              onChange={(e) => setForm((f) => ({ ...f, username: e.target.value }))}
-              className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-white outline-none transition focus:border-fuchsia-400/60 focus:ring-2 focus:ring-fuchsia-400/30"
-              placeholder="فقط حروف انگلیسی و عدد"
-              dir="ltr"
-            />
-          </div>
-          <div>
-            <label className="mb-1 block text-sm font-semibold text-violet-100/80">رمز عبور</label>
+        </div>
+        <div>
+          <label className="mb-1.5 block text-xs font-bold text-[var(--muted)]">نام کاربری</label>
+          <input
+            required
+            value={form.username}
+            onChange={(e) => setForm((f) => ({ ...f, username: e.target.value }))}
+            className="input-field text-left"
+            placeholder="فقط حروف انگلیسی و عدد"
+            dir="ltr"
+            autoComplete="username"
+          />
+        </div>
+        <div>
+          <label className="mb-1.5 block text-xs font-bold text-[var(--muted)]">رمز عبور</label>
+          <div className="relative">
+            <LockIcon className="pointer-events-none absolute left-3.5 top-1/2 h-4.5 w-4.5 -translate-y-1/2 text-[var(--muted)]" />
             <input
               required
               type="password"
               value={form.password}
               onChange={(e) => setForm((f) => ({ ...f, password: e.target.value }))}
-              className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-white outline-none transition focus:border-fuchsia-400/60 focus:ring-2 focus:ring-fuchsia-400/30"
+              className="input-field with-icon text-left"
               placeholder="حداقل ۶ کاراکتر"
               dir="ltr"
+              autoComplete="new-password"
             />
           </div>
+        </div>
 
+        <div className="sm:col-span-2">
           {error && (
-            <p className="rounded-xl border border-rose-400/40 bg-rose-500/10 px-3 py-2 text-sm text-rose-300">
+            <p className="mb-3 rounded-xl border border-rose-400/40 bg-rose-500/10 px-3.5 py-2.5 text-sm text-rose-300">
               {error}
             </p>
           )}
-
-          <button
-            type="submit"
-            disabled={loading}
-            className="btn-glow w-full rounded-xl py-3 text-sm font-bold text-white disabled:opacity-60"
-          >
-            {loading ? "در حال ثبت‌نام..." : "ثبت‌نام"}
+          <button type="submit" disabled={loading} className="btn-primary w-full rounded-xl py-3.5 text-sm">
+            {loading ? "در حال ثبت‌نام..." : "ثبت‌نام و ورود به فروشگاه"}
           </button>
-        </form>
+        </div>
+      </form>
 
-        <p className="mt-6 text-center text-sm text-violet-100/60">
-          قبلاً ثبت‌نام کرده‌اید؟{" "}
-          <Link href="/login" className="font-bold text-fuchsia-300 hover:underline">
-            وارد شوید
-          </Link>
-        </p>
+      <p className="mt-5 flex items-center justify-center gap-1.5 text-center text-[11px] text-[var(--muted)]">
+        <ShieldIcon className="h-4 w-4 text-teal-300" />
+        اطلاعات شما تنها برای پردازش سفارش استفاده می‌شود.
+      </p>
+
+      <div className="mt-6 border-t border-[rgba(148,184,220,0.14)] pt-5 text-center text-sm text-[var(--muted)]">
+        قبلاً ثبت‌نام کرده‌اید؟{" "}
+        <Link href="/login" className="font-black text-amber-300 transition hover:text-amber-200">
+          وارد شوید
+        </Link>
       </div>
-    </main>
+    </AuthShell>
   );
 }
