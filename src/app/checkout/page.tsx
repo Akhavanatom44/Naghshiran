@@ -4,10 +4,13 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useCart } from "@/lib/cart-context";
 import { useAuth } from "@/lib/auth-context";
-
-function formatToman(amount: number) {
-  return amount.toLocaleString("fa-IR") + " تومان";
-}
+import { faNum, formatToman } from "@/lib/format";
+import {
+  BANK_ACCOUNT_OWNER,
+  BANK_CARD_NUMBER,
+  STORE_ADDRESS,
+} from "@/lib/format";
+import { MapPinIcon, PhoneIcon, ReceiptIcon, TruckIcon } from "@/components/icons";
 
 function fileToDataUrl(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -18,9 +21,6 @@ function fileToDataUrl(file: File): Promise<string> {
   });
 }
 
-const BANK_CARD_NUMBER = "6037-9918-0000-0000";
-const BANK_ACCOUNT_OWNER = "فروشگاه نقش ایران";
-
 export default function CheckoutPage() {
   const router = useRouter();
   const { items, totalAmount, clearCart } = useCart();
@@ -30,7 +30,7 @@ export default function CheckoutPage() {
   const [phone, setPhone] = useState("");
   const [deliveryMethod, setDeliveryMethod] = useState<"ship" | "pickup">("ship");
   const [address, setAddress] = useState("");
-  const [receiptPreview, setReceiptPreview] = useState<string>("");
+  const [receiptPreview, setReceiptPreview] = useState("");
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -111,147 +111,172 @@ export default function CheckoutPage() {
 
   if (loading || !user || items.length === 0) {
     return (
-      <main className="mx-auto max-w-3xl px-4 py-24 text-center text-violet-100/60">
+      <main className="mx-auto max-w-3xl px-4 py-24 text-center text-[var(--muted)]">
         در حال بارگذاری...
       </main>
     );
   }
 
   return (
-    <main className="mx-auto max-w-4xl px-4 py-12">
-      <h1 className="mb-8 text-2xl font-extrabold text-white">
+    <main className="mx-auto max-w-5xl px-4 py-10">
+      <h1 className="mb-2 text-xl font-black text-white sm:text-2xl">
         تکمیل <span className="gradient-text">فرایند خرید</span>
       </h1>
+      <p className="mb-8 text-sm text-[var(--muted)]">
+        اطلاعات گیرنده را وارد کنید، فیش واریزی را بارگذاری کنید و دکمهٔ خرید را بزنید.
+      </p>
 
       <div className="grid gap-6 lg:grid-cols-3">
-        <form onSubmit={onSubmit} className="glass-card space-y-5 rounded-3xl p-6 lg:col-span-2">
+        <form
+          onSubmit={onSubmit}
+          className="glass-card fade-in-up space-y-5 rounded-3xl p-5 sm:p-6 lg:col-span-2"
+        >
           <div className="grid gap-4 sm:grid-cols-2">
             <div>
-              <label className="mb-1 block text-sm font-semibold text-violet-100/80">نام و نام خانوادگی گیرنده</label>
+              <label className="mb-1.5 block text-xs font-bold text-[var(--muted)]">
+                نام و نام خانوادگی گیرنده
+              </label>
               <input
                 required
                 value={fullName}
                 onChange={(e) => setFullName(e.target.value)}
-                className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-white outline-none focus:border-fuchsia-400/60 focus:ring-2 focus:ring-fuchsia-400/30"
+                className="input-field"
+                autoComplete="name"
               />
             </div>
             <div>
-              <label className="mb-1 block text-sm font-semibold text-violet-100/80">شماره تلفن</label>
+              <label className="mb-1.5 block text-xs font-bold text-[var(--muted)]">شماره تلفن</label>
               <input
                 required
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
                 dir="ltr"
-                className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-white outline-none focus:border-fuchsia-400/60 focus:ring-2 focus:ring-fuchsia-400/30"
+                inputMode="tel"
+                className="input-field text-left"
+                autoComplete="tel"
               />
             </div>
           </div>
 
           <div>
-            <label className="mb-2 block text-sm font-semibold text-violet-100/80">روش تحویل</label>
+            <label className="mb-2 block text-xs font-bold text-[var(--muted)]">روش تحویل</label>
             <div className="grid gap-3 sm:grid-cols-2">
               <button
                 type="button"
                 onClick={() => setDeliveryMethod("ship")}
-                className={`rounded-xl border p-4 text-right transition ${
+                className={`rounded-2xl border p-4 text-right transition ${
                   deliveryMethod === "ship"
-                    ? "border-fuchsia-400/70 bg-fuchsia-500/10"
-                    : "border-white/10 bg-white/5 hover:bg-white/10"
+                    ? "border-amber-400/60 bg-amber-400/10"
+                    : "border-[rgba(148,184,220,0.16)] bg-white/5 hover:bg-white/10"
                 }`}
               >
-                <p className="font-bold text-white">🚚 ارسال با پیک</p>
-                <p className="mt-1 text-xs text-violet-100/60">هزینه پیک بر عهده مشتری است</p>
+                <span className="flex items-center gap-2 font-extrabold text-white">
+                  <TruckIcon className={`h-5 w-5 ${deliveryMethod === "ship" ? "text-amber-400" : "text-[var(--muted)]"}`} />
+                  ارسال با پیک
+                </span>
+                <span className="mt-1.5 block text-xs leading-5 text-[var(--muted)]">
+                  هزینه پیک بر عهده مشتری است
+                </span>
               </button>
               <button
                 type="button"
                 onClick={() => setDeliveryMethod("pickup")}
-                className={`rounded-xl border p-4 text-right transition ${
+                className={`rounded-2xl border p-4 text-right transition ${
                   deliveryMethod === "pickup"
-                    ? "border-cyan-400/70 bg-cyan-500/10"
-                    : "border-white/10 bg-white/5 hover:bg-white/10"
+                    ? "border-teal-400/60 bg-teal-400/10"
+                    : "border-[rgba(148,184,220,0.16)] bg-white/5 hover:bg-white/10"
                 }`}
               >
-                <p className="font-bold text-white">🏬 تحویل حضوری</p>
-                <p className="mt-1 text-xs text-violet-100/60">
-                  خیابان استانداری، نبش خیابان فرشادی، فروشگاه نقش ایران
-                </p>
+                <span className="flex items-center gap-2 font-extrabold text-white">
+                  <MapPinIcon className={`h-5 w-5 ${deliveryMethod === "pickup" ? "text-teal-300" : "text-[var(--muted)]"}`} />
+                  تحویل حضوری
+                </span>
+                <span className="mt-1.5 block text-xs leading-5 text-[var(--muted)]">{STORE_ADDRESS}</span>
               </button>
             </div>
           </div>
 
           {deliveryMethod === "ship" && (
             <div>
-              <label className="mb-1 block text-sm font-semibold text-violet-100/80">آدرس دقیق پستی</label>
+              <label className="mb-1.5 block text-xs font-bold text-[var(--muted)]">آدرس دقیق پستی</label>
               <textarea
                 required
                 value={address}
                 onChange={(e) => setAddress(e.target.value)}
                 rows={3}
-                className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-white outline-none focus:border-fuchsia-400/60 focus:ring-2 focus:ring-fuchsia-400/30"
+                className="input-field resize-none"
                 placeholder="استان، شهر، خیابان، کوچه، پلاک، واحد"
               />
             </div>
           )}
 
-          <div className="rounded-2xl border border-amber-400/30 bg-amber-500/10 p-4 text-sm text-amber-200">
-            <p className="font-bold">💳 اطلاعات واریز</p>
-            <p className="mt-1">
-              مبلغ <span className="font-extrabold text-white">{formatToman(totalAmount)}</span> را به
-              شماره کارت <span dir="ltr" className="font-bold text-white">{BANK_CARD_NUMBER}</span> به
-              نام {BANK_ACCOUNT_OWNER} واریز کرده و تصویر فیش واریزی را در ادامه بارگذاری کنید.
+          <div className="rounded-2xl border border-amber-400/30 bg-amber-400/10 p-4 text-sm leading-7 text-amber-100">
+            <p className="flex items-center gap-2 font-black text-amber-300">
+              <ReceiptIcon className="h-5 w-5" />
+              اطلاعات واریز وجه
+            </p>
+            <p className="mt-2">
+              مبلغ <span className="font-black text-white">{formatToman(totalAmount)}</span> را به شماره
+              کارت <span dir="ltr" className="font-black tracking-wider text-white">{BANK_CARD_NUMBER}</span> به
+              نام <span className="font-black text-white">{BANK_ACCOUNT_OWNER}</span> واریز کرده و تصویر
+              فیش را بارگذاری کنید.
             </p>
           </div>
 
           <div>
-            <label className="mb-1 block text-sm font-semibold text-violet-100/80">تصویر فیش واریزی</label>
+            <label className="mb-1.5 block text-xs font-bold text-[var(--muted)]">تصویر فیش واریزی</label>
             <input
               ref={fileInputRef}
               type="file"
               accept="image/*"
               onChange={onFileChange}
-              className="block w-full text-sm text-violet-100/70 file:ml-4 file:rounded-xl file:border-0 file:bg-gradient-to-r file:from-fuchsia-500 file:to-violet-500 file:px-4 file:py-2 file:text-sm file:font-bold file:text-white"
+              className="block w-full cursor-pointer text-sm text-[var(--muted)] file:ml-4 file:cursor-pointer file:rounded-xl file:border-0 file:bg-gradient-to-l file:from-orange-600 file:to-amber-400 file:px-4 file:py-2.5 file:text-sm file:font-black file:text-[#1c0e00]"
             />
             {receiptPreview && (
-              <div className="mt-3 overflow-hidden rounded-xl border border-white/10">
+              <div className="mt-3 overflow-hidden rounded-xl border border-[rgba(148,184,220,0.2)]">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={receiptPreview} alt="فیش واریزی" className="max-h-64 w-full object-contain bg-black/30" />
+                <img
+                  src={receiptPreview}
+                  alt="فیش واریزی"
+                  className="max-h-64 w-full bg-black/30 object-contain"
+                />
               </div>
             )}
           </div>
 
           {error && (
-            <p className="rounded-xl border border-rose-400/40 bg-rose-500/10 px-3 py-2 text-sm text-rose-300">
+            <p className="rounded-xl border border-rose-400/40 bg-rose-500/10 px-3.5 py-2.5 text-sm text-rose-300">
               {error}
             </p>
           )}
 
-          <button
-            type="submit"
-            disabled={submitting}
-            className="btn-glow w-full rounded-xl py-3 text-sm font-bold text-white disabled:opacity-60"
-          >
-            {submitting ? "در حال ثبت سفارش..." : "ثبت نهایی سفارش و ارسال فیش"}
+          <button type="submit" disabled={submitting} className="btn-primary w-full rounded-xl py-4 text-sm">
+            {submitting ? "در حال ثبت سفارش..." : "ثبت نهایی خرید و ارسال فیش"}
           </button>
         </form>
 
-        <div className="glass-card neon-border h-fit rounded-3xl p-6">
-          <h2 className="mb-4 text-lg font-bold text-white">خلاصه سبد خرید</h2>
+        <div className="glass-card fade-in-up h-fit rounded-3xl p-5 sm:p-6">
+          <h2 className="mb-4 text-base font-black text-white">خلاصه سبد خرید</h2>
           <div className="space-y-3">
             {items.map((item) => (
-              <div key={item.productId} className="flex items-center justify-between text-sm">
-                <span className="text-violet-100/70">
-                  {item.name} × {item.quantity.toLocaleString("fa-IR")}
+              <div key={item.productId} className="flex items-center justify-between gap-2 text-sm">
+                <span className="truncate text-[var(--muted)]">
+                  {item.name} × {faNum(item.quantity)}
                 </span>
-                <span className="font-semibold text-white">
+                <span className="shrink-0 font-bold text-white">
                   {formatToman(item.price * item.quantity)}
                 </span>
               </div>
             ))}
           </div>
-          <div className="mt-4 flex items-center justify-between border-t border-white/10 pt-3 text-base font-bold text-white">
-            <span>جمع کل</span>
-            <span className="gradient-text">{formatToman(totalAmount)}</span>
+          <div className="mt-4 flex items-center justify-between border-t border-[rgba(148,184,220,0.14)] pt-3">
+            <span className="text-sm font-black text-white">جمع کل</span>
+            <span className="text-base font-black text-amber-300">{formatToman(totalAmount)}</span>
           </div>
+          <p className="mt-4 flex items-center gap-2 rounded-xl bg-white/5 p-3 text-[11px] leading-5 text-[var(--muted)]">
+            <PhoneIcon className="h-4 w-4 shrink-0 text-teal-300" />
+            پس از ثبت، فیش شما برای ادمین فروشگاه ارسال و پس از تأیید، نتیجه همین‌جا اعلام می‌شود.
+          </p>
         </div>
       </div>
     </main>

@@ -65,7 +65,7 @@ export async function notifyAdminsAboutOrder(order: OrderForTelegram) {
 
   const deliveryText =
     order.deliveryMethod === "pickup"
-      ? "تحویل حضوری از فروشگاه (خیابان استانداری، نبش خیابان فرشادی، فروشگاه نقش ایران)"
+      ? "تحویل حضوری از فروشگاه (اصفهان، خیابان استانداری، نبش خیابان فرشادی، فروشگاه نقشیران)"
       : `ارسال با پیک به آدرس:\n${order.address ?? "-"}`;
 
   const caption = [
