@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import type { ReactNode } from "react";
 import localFont from "next/font/local";
 import "./globals.css";
@@ -17,6 +17,13 @@ const vazirmatn = localFont({
   variable: "--font-vazirmatn",
   display: "swap",
 });
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover", // needed so env(safe-area-inset-*) works on notched phones
+  themeColor: "#0a1322",
+};
 
 const publicSiteUrl = process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "");
 
@@ -37,7 +44,7 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="fa" dir="rtl" className={vazirmatn.variable}>
-      <body className="relative min-h-screen bg-[#0a1322] font-[family-name:var(--font-vazirmatn)] text-white antialiased">
+      <body className="relative min-h-dvh bg-[#0a1322] font-[family-name:var(--font-vazirmatn)] text-white antialiased">
         <GlowBackground />
         <AuthProvider>
           <CartProvider>

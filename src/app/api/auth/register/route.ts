@@ -73,8 +73,14 @@ export async function POST(req: Request) {
       return Response.json({ error: "نام کاربری یا شماره موبایل قبلاً ثبت شده است" }, { status: 409 });
     }
     console.error("[auth/register] database error", error);
+    const detail = error instanceof Error ? error.message : String(error);
+    const bindingMissing = detail.includes("binding `DB` is missing");
     return Response.json(
-      { error: "پایگاه داده در دسترس نیست؛ اتصال D1 را در wrangler.jsonc بررسی کنید" },
+      {
+        error: bindingMissing
+          ? "پایگاه داده در دسترس نیست؛ اتصال D1 را در wrangler.jsonc بررسی کنید"
+          : "ثبت‌نام انجام نشد؛ لطفاً چند لحظه بعد دوباره تلاش کنید یا با فروشگاه تماس بگیرید",
+      },
       { status: 503 }
     );
   }

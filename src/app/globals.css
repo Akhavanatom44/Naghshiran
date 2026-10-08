@@ -16,12 +16,17 @@
 html {
   color-scheme: dark;
   scroll-behavior: smooth;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+  overflow-x: clip;
 }
 
 body {
   background: var(--bg);
   color: var(--text);
   min-height: 100vh;
+  min-height: 100dvh;
+  overflow-x: clip;
 }
 
 /* room for the mobile bottom navigation */
@@ -122,12 +127,14 @@ button {
     box-shadow 0.25s ease,
     filter 0.25s ease;
 }
+@media (hover: hover) {
 .btn-primary:hover {
   transform: translateY(-2px);
   box-shadow:
     0 16px 34px -12px rgba(255, 122, 0, 0.8),
     inset 0 1px 0 rgba(255, 255, 255, 0.4);
   filter: saturate(1.1);
+}
 }
 .btn-primary:active {
   transform: translateY(0) scale(0.97);
@@ -481,4 +488,34 @@ button {
 }
 .spin-slow {
   animation: spinSlow 1.1s linear infinite;
+}
+
+/* ---------- mobile fixes ---------- */
+
+/* iOS Safari zooms the page when a focused field is smaller than 16px. */
+@media (max-width: 767px) {
+  .input-field {
+    font-size: 16px;
+  }
+  .glass-card {
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+  }
+}
+
+img,
+video,
+svg {
+  max-width: 100%;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

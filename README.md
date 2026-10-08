@@ -74,9 +74,11 @@ TELEGRAM_ADMIN_CHAT_IDS=
 
 فایل `wrangler.jsonc` نیز Worker، assetها و binding دیتابیس D1 با نام `d1_naghshiran` و شناسه جدید را تعریف می‌کند.
 
-در بخش **Build Variables and secrets** کلودفلر، مقدار `SESSION_SECRET` را با یک رشته تصادفی حداقل ۳۲ کاراکتری تنظیم کنید و در صورت استفاده از اعلان تلگرام، `TELEGRAM_BOT_TOKEN` و `TELEGRAM_ADMIN_CHAT_IDS` را نیز وارد کنید.
+در **Settings → Variables and Secrets** (مقادیر زمان اجرا، نه Build variables) مقدار `SESSION_SECRET` را با یک رشته تصادفی حداقل ۳۲ کاراکتری تنظیم کنید و در صورت استفاده از اعلان تلگرام، `TELEGRAM_BOT_TOKEN` و `TELEGRAM_ADMIN_CHAT_IDS` را نیز وارد کنید.
 
 `npm run deploy` برای محیطی مناسب است که build و deploy را در یک دستور انجام می‌دهد؛ در Workers Builds می‌توانید build و deploy را در دو مرحله‌ی بالا قرار دهید.
+
+> جدول‌ها و کاتالوگ محصولات در اولین درخواست به دیتابیس به‌صورت خودکار ساخته می‌شوند (`src/db/index.ts`)؛ اجرای دستی `db:push` و `db:seed` دیگر الزامی نیست.
 
 ## تصاویر محصولات
 

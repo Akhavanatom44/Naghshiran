@@ -122,7 +122,7 @@ export default function LoginForm({ initialMode, nextPath }: LoginFormProps) {
           type="button"
           onClick={() => changeMode("register")}
           aria-pressed={mode === "register"}
-          className={`rounded-lg px-4 py-2 text-xs font-extrabold transition ${
+          className={`rounded-lg px-4 py-2.5 text-xs font-extrabold transition ${
             mode === "register" ? "bg-amber-400/15 text-amber-200" : "text-[var(--muted)] hover:text-white"
           }`}
         >
@@ -132,7 +132,7 @@ export default function LoginForm({ initialMode, nextPath }: LoginFormProps) {
           type="button"
           onClick={() => changeMode("login")}
           aria-pressed={mode === "login"}
-          className={`rounded-lg px-4 py-2 text-xs font-extrabold transition ${
+          className={`rounded-lg px-4 py-2.5 text-xs font-extrabold transition ${
             mode === "login" ? "bg-amber-400/15 text-amber-200" : "text-[var(--muted)] hover:text-white"
           }`}
         >
