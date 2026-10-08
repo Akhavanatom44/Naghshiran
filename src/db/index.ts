@@ -3,10 +3,12 @@ import { drizzle } from "drizzle-orm/d1";
 import * as schema from "./schema";
 
 /**
- * The database is Cloudflare D1 (SQLite), reached through the `DB` binding
- * declared in wrangler.jsonc. The previous node-postgres (`pg`) driver cannot
- * run on Workers: it needs raw TCP sockets, and bundling it for the edge
- * failed with `Could not resolve "pg-cloudflare"`.
+ * Cloudflare D1 database access for OpenNext.
+ *
+ * The D1 binding is request-scoped through the Cloudflare Worker runtime.
+ * Do not keep the Drizzle client in a process/global singleton: Worker
+ * isolates can be reused across requests and the binding should always come
+ * from the current request's Cloudflare environment.
  */
 
 function createDatabase(database: D1Database) {
@@ -15,28 +17,22 @@ function createDatabase(database: D1Database) {
 
 export type Database = ReturnType<typeof createDatabase>;
 
-const globalForDb = globalThis as typeof globalThis & {
-  __naghshiranDatabase?: Database;
-};
-
 /**
- * Resolve the D1-backed database for the current request.
+ * Resolve the D1-backed database from the current Cloudflare request.
  *
- * Next.js imports route modules during `next build` to collect route metadata,
- * so the Cloudflare context is only touched when a query is actually made.
- * Importing this module stays safe during a build without bindings, and
- * runtime requests receive a clear error when the D1 binding is missing.
+ * All database consumers in this application are dynamic route handlers or
+ * server functions, so the synchronous getCloudflareContext() form is the
+ * appropriate OpenNext API here. Static/SSG code should use the async form.
  */
-export async function getDb(): Promise<Database> {
-  if (!globalForDb.__naghshiranDatabase) {
-    const { env } = await getCloudflareContext({ async: true });
-    if (!env.DB) {
-      throw new Error(
-        "D1 binding `DB` is not configured; check the d1_databases section of wrangler.jsonc."
-      );
-    }
-    globalForDb.__naghshiranDatabase = createDatabase(env.DB);
+export function getDb(): Database {
+  const { env } = getCloudflareContext();
+
+  if (!env.DB) {
+    throw new Error(
+      "D1 binding `DB` is missing from the active Cloudflare Worker environment. " +
+        "Make sure wrangler.jsonc defines the d1_naghshiran binding and that the latest Worker deployment includes it."
+    );
   }
 
-  return globalForDb.__naghshiranDatabase;
+  return createDatabase(env.DB);
 }
