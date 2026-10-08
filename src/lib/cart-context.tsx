@@ -1,5 +1,6 @@
 "use client";
 
+import { CART_STORAGE_KEY } from "@/lib/cart-storage";
 import {
   createContext,
   useCallback,
@@ -25,6 +26,7 @@ export type CartToastState = { id: number; message: string } | null;
 
 type CartContextValue = {
   items: CartItem[];
+  ready: boolean;
   addItem: (item: Omit<CartItem, "quantity">, quantity?: number) => void;
   removeItem: (productId: number) => void;
   updateQuantity: (productId: number, quantity: number) => void;
@@ -37,7 +39,30 @@ type CartContextValue = {
 };
 
 const CartContext = createContext<CartContextValue | null>(null);
-const STORAGE_KEY = "naghsh-iran-cart";
+
+function readStoredCart(): CartItem[] {
+  try {
+    const raw = window.localStorage.getItem(CART_STORAGE_KEY);
+    const value: unknown = raw ? JSON.parse(raw) : [];
+    if (!Array.isArray(value)) return [];
+
+    return value.filter((item): item is CartItem =>
+      typeof item === "object" &&
+      item !== null &&
+      Number.isInteger(item.productId) &&
+      Number.isInteger(item.code) &&
+      typeof item.name === "string" &&
+      typeof item.price === "number" &&
+      Number.isFinite(item.price) &&
+      typeof item.quantity === "number" &&
+      Number.isInteger(item.quantity) &&
+      item.quantity > 0 &&
+      typeof item.stock === "number"
+    );
+  } catch {
+    return [];
+  }
+}
 
 export function CartProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<CartItem[]>([]);
@@ -46,23 +71,15 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
-    let stored: CartItem[] = [];
-    try {
-      const raw = window.localStorage.getItem(STORAGE_KEY);
-      if (raw) stored = JSON.parse(raw);
-    } catch {
-      // ignore corrupted storage
-    }
-    // Hydrate after mount (server render must stay empty to avoid a
-    // hydration mismatch), so this one deliberate sync needs setState here.
+    // Hydrate after mount (server render must stay empty to avoid a mismatch).
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    setItems(stored);
+    setItems(readStoredCart());
     setHydrated(true);
   }, []);
 
   useEffect(() => {
     if (!hydrated) return;
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
+    window.localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(items));
   }, [items, hydrated]);
 
   const showToast = useCallback((message: string) => {
@@ -92,7 +109,11 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const updateQuantity = (productId: number, quantity: number) => {
     setItems((prev) =>
       prev
-        .map((p) => (p.productId === productId ? { ...p, quantity } : p))
+        .map((p) =>
+          p.productId === productId
+            ? { ...p, quantity: Math.min(quantity, Math.max(p.stock, 1)) }
+            : p
+        )
         .filter((p) => p.quantity > 0)
     );
   };
@@ -115,6 +136,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
     <CartContext.Provider
       value={{
         items,
+        ready: hydrated,
         addItem,
         removeItem,
         updateQuantity,

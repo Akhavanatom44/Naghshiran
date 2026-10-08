@@ -1,7 +1,10 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useCart } from "@/lib/cart-context";
+import { useAuth } from "@/lib/auth-context";
 import { faNum } from "@/lib/format";
+import { savePendingCartProduct } from "@/lib/cart-storage";
 import { MinusIcon, PlusIcon } from "@/components/icons";
 
 export type ProductForCard = {
@@ -12,6 +15,8 @@ export type ProductForCard = {
   price: number;
   imageUrl: string;
   stock: number;
+  category?: string;
+  canPurchase?: boolean;
 };
 
 export default function ProductCard({
@@ -21,11 +26,35 @@ export default function ProductCard({
   product: ProductForCard;
   index?: number;
 }) {
-  const { addItem, updateQuantity, getQuantity, showToast } = useCart();
+  const router = useRouter();
+  const { user, loading: authLoading } = useAuth();
+  const { addItem, updateQuantity, getQuantity, showToast, ready: cartReady } = useCart();
   const qty = getQuantity(product.id);
   const outOfStock = product.stock <= 0;
+  const canPurchase = product.canPurchase !== false;
+  const atStockLimit = qty >= product.stock;
 
   const addOne = () => {
+    if (!canPurchase) {
+      showToast("برای فعال‌سازی خرید، ابتدا کاتالوگ را به پایگاه داده متصل کنید");
+      return;
+    }
+    if (authLoading || !cartReady || outOfStock || atStockLimit) return;
+
+    if (!user) {
+      const saved = savePendingCartProduct({
+        productId: product.id,
+        code: product.code,
+        name: product.name,
+        price: product.price,
+        imageUrl: product.imageUrl,
+        stock: product.stock,
+      });
+      if (!saved) showToast("مرورگر اجازه‌ی ذخیره‌ی سبد را نداد؛ پس از ورود دوباره تلاش کنید");
+      router.push("/login?mode=register&next=%2Fcart");
+      return;
+    }
+
     addItem(
       {
         productId: product.id,
@@ -45,18 +74,18 @@ export default function ProductCard({
   return (
     <article
       className="product-card fade-in-up"
-      style={{ animationDelay: `${Math.min(index, 11) * 70}ms` }}
+      style={{ animationDelay: `${Math.min(index, 11) * 55}ms` }}
     >
-      {/* ─── white showcase stage ─── */}
       <div className="product-stage m-2 rounded-[1rem] sm:m-2.5">
         <span className="ring-anim rounded-[1rem]" />
         {product.imageUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
             src={product.imageUrl}
-            alt={product.name}
-            loading="lazy"
-            className="mix-blend-multiply h-full w-full rounded-[1rem] object-contain p-3 sm:p-4"
+            alt={`تصویر ${product.name}`}
+            loading={index < 8 ? "eager" : "lazy"}
+            decoding="async"
+            className="mix-blend-multiply h-full w-full rounded-[1rem] object-contain p-2.5 sm:p-3.5"
           />
         ) : (
           <div className="grid h-full w-full place-items-center text-5xl">🛍️</div>
@@ -64,22 +93,28 @@ export default function ProductCard({
         <span className="stage-inner-shadow rounded-[1rem]" />
         <span className="stage-shine rounded-[1rem]" />
 
-        <span className="absolute right-2.5 top-2.5 rounded-full bg-[#0a1322]/80 px-2.5 py-1 text-[10px] font-bold text-amber-300 backdrop-blur">
+        <span className="absolute right-2.5 top-2.5 rounded-full bg-[#0a1322]/85 px-2.5 py-1 text-[10px] font-bold text-amber-300 backdrop-blur">
           کد {faNum(product.code)}
         </span>
+        {product.category && (
+          <span className="absolute bottom-2.5 right-2.5 max-w-[62%] truncate rounded-full border border-slate-200/70 bg-white/90 px-2.5 py-1 text-[9px] font-bold text-slate-600 shadow-sm">
+            {product.category}
+          </span>
+        )}
         {outOfStock && (
           <span className="absolute left-2.5 top-2.5 rounded-full bg-rose-600/90 px-2.5 py-1 text-[10px] font-bold text-white">
             ناموجود
           </span>
         )}
 
-        {/* add-to-cart: turns into a quantity stepper */}
         <div className="absolute bottom-2.5 left-2.5 z-10">
           {outOfStock ? null : qty === 0 ? (
             <button
               onClick={addOne}
+              disabled={!canPurchase || authLoading || !cartReady}
               aria-label={`افزودن ${product.name} به سبد خرید`}
-              className="add-btn"
+              title={!canPurchase ? "پایگاه داده‌ی فروشگاه هنوز آماده نیست" : !user ? "برای افزودن، ابتدا ثبت‌نام یا وارد شوید" : "افزودن به سبد خرید"}
+              className="add-btn disabled:cursor-wait disabled:opacity-70"
             >
               <PlusIcon className="h-5 w-5" />
             </button>
@@ -87,8 +122,9 @@ export default function ProductCard({
             <div className="stepper-pill">
               <button
                 onClick={addOne}
+                disabled={!canPurchase || authLoading || !cartReady || atStockLimit}
                 aria-label="افزودن یک عدد"
-                className="stepper-btn stepper-plus"
+                className="stepper-btn stepper-plus disabled:cursor-not-allowed disabled:opacity-40"
               >
                 <PlusIcon className="h-4 w-4" />
               </button>
@@ -107,23 +143,22 @@ export default function ProductCard({
         </div>
       </div>
 
-      {/* ─── info ─── */}
       <div className="space-y-1.5 px-3.5 pb-4 pt-1 sm:px-4">
-        <h3 className="line-clamp-1 text-sm font-extrabold text-white sm:text-base">
+        <h3 className="line-clamp-2 min-h-[2.7rem] text-sm font-extrabold leading-5 text-white sm:text-base sm:leading-6">
           {product.name}
         </h3>
         <p className="line-clamp-2 min-h-[2.2rem] text-xs leading-5 text-[var(--muted)]">
           {product.description || "بدون توضیحات"}
         </p>
-        <div className="flex items-end justify-between pt-1">
-          <div className="flex items-baseline gap-1">
-            <span className="text-base font-black text-amber-300 sm:text-lg">
+        <div className="flex items-end justify-between gap-2 pt-1">
+          <div className="min-w-0">
+            <span className="block whitespace-nowrap text-[15px] font-black text-amber-300 sm:text-lg">
               {product.price.toLocaleString("fa-IR")}
             </span>
             <span className="text-[10px] font-bold text-[var(--muted)]">تومان</span>
           </div>
           {!outOfStock && (
-            <span className="flex items-center gap-1 text-[10px] font-bold text-emerald-300">
+            <span className="mb-0.5 flex shrink-0 items-center gap-1 text-[10px] font-bold text-emerald-300">
               <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
               موجود
             </span>

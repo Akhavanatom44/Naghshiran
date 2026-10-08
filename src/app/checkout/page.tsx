@@ -5,11 +5,7 @@ import { useRouter } from "next/navigation";
 import { useCart } from "@/lib/cart-context";
 import { useAuth } from "@/lib/auth-context";
 import { faNum, formatToman } from "@/lib/format";
-import {
-  BANK_ACCOUNT_OWNER,
-  BANK_CARD_NUMBER,
-  STORE_ADDRESS,
-} from "@/lib/format";
+import { STORE_ADDRESS, STORE_PHONE_DISPLAY, STORE_PHONE_TEL } from "@/lib/format";
 import { MapPinIcon, PhoneIcon, ReceiptIcon, TruckIcon } from "@/components/icons";
 
 function fileToDataUrl(file: File): Promise<string> {
@@ -23,11 +19,11 @@ function fileToDataUrl(file: File): Promise<string> {
 
 export default function CheckoutPage() {
   const router = useRouter();
-  const { items, totalAmount, clearCart } = useCart();
+  const { items, ready, totalAmount, clearCart } = useCart();
   const { user, loading } = useAuth();
 
-  const [fullName, setFullName] = useState("");
-  const [phone, setPhone] = useState("");
+  const [fullName, setFullName] = useState<string | undefined>(undefined);
+  const [phone, setPhone] = useState<string | undefined>(undefined);
   const [deliveryMethod, setDeliveryMethod] = useState<"ship" | "pickup">("ship");
   const [address, setAddress] = useState("");
   const [receiptPreview, setReceiptPreview] = useState("");
@@ -37,20 +33,15 @@ export default function CheckoutPage() {
 
   useEffect(() => {
     if (!loading && !user) {
-      router.replace("/login?next=/checkout");
+      router.replace("/login?mode=register&next=%2Fcheckout");
     }
   }, [loading, user, router]);
 
   useEffect(() => {
-    if (user?.fullName) setFullName(user.fullName);
-    if (user?.phone) setPhone(user.phone);
-  }, [user]);
-
-  useEffect(() => {
-    if (!loading && items.length === 0) {
+    if (!loading && ready && items.length === 0) {
       router.replace("/cart");
     }
-  }, [loading, items, router]);
+  }, [loading, ready, items.length, router]);
 
   async function onFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -88,8 +79,8 @@ export default function CheckoutPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           items: items.map((i) => ({ productId: i.productId, quantity: i.quantity })),
-          fullName,
-          phone,
+          fullName: fullName ?? user?.fullName ?? "",
+          phone: phone ?? user?.phone ?? "",
           deliveryMethod,
           address: deliveryMethod === "ship" ? address : null,
           receiptImage: receiptPreview,
@@ -109,7 +100,7 @@ export default function CheckoutPage() {
     }
   }
 
-  if (loading || !user || items.length === 0) {
+  if (loading || !ready || !user || items.length === 0) {
     return (
       <main className="mx-auto max-w-3xl px-4 py-24 text-center text-[var(--muted)]">
         در حال بارگذاری...
@@ -138,7 +129,7 @@ export default function CheckoutPage() {
               </label>
               <input
                 required
-                value={fullName}
+                value={fullName ?? user.fullName ?? ""}
                 onChange={(e) => setFullName(e.target.value)}
                 className="input-field"
                 autoComplete="name"
@@ -148,7 +139,7 @@ export default function CheckoutPage() {
               <label className="mb-1.5 block text-xs font-bold text-[var(--muted)]">شماره تلفن</label>
               <input
                 required
-                value={phone}
+                value={phone ?? user.phone ?? ""}
                 onChange={(e) => setPhone(e.target.value)}
                 dir="ltr"
                 inputMode="tel"
@@ -216,11 +207,14 @@ export default function CheckoutPage() {
               اطلاعات واریز وجه
             </p>
             <p className="mt-2">
-              مبلغ <span className="font-black text-white">{formatToman(totalAmount)}</span> را به شماره
-              کارت <span dir="ltr" className="font-black tracking-wider text-white">{BANK_CARD_NUMBER}</span> به
-              نام <span className="font-black text-white">{BANK_ACCOUNT_OWNER}</span> واریز کرده و تصویر
-              فیش را بارگذاری کنید.
+              برای جلوگیری از واریز به شماره‌ی نادرست، پیش از پرداخت اطلاعات حساب را تلفنی از فروشگاه دریافت کنید.
+              مبلغ <span className="font-black text-white">{formatToman(totalAmount)}</span> را پس از هماهنگی واریز
+              کرده و تصویر فیش را بارگذاری کنید.
             </p>
+            <a href={STORE_PHONE_TEL} className="mt-2 inline-flex items-center gap-2 font-black text-amber-200 underline underline-offset-4" dir="ltr">
+              <PhoneIcon className="h-4 w-4" />
+              {STORE_PHONE_DISPLAY}
+            </a>
           </div>
 
           <div>

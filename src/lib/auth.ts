@@ -9,8 +9,11 @@ const SESSION_COOKIE = "nagheshiran_session";
 const encoder = new TextEncoder();
 
 function getSecret() {
-  const secret = process.env.SESSION_SECRET || "nagheshiran-dev-secret-change-me";
-  return encoder.encode(secret);
+  const configuredSecret = process.env.SESSION_SECRET?.trim();
+  if (process.env.NODE_ENV === "production" && (!configuredSecret || configuredSecret.length < 32)) {
+    throw new Error("SESSION_SECRET must be configured with at least 32 characters in production.");
+  }
+  return encoder.encode(configuredSecret || "naghshiran-dev-secret-change-me");
 }
 
 export async function hashPassword(password: string) {
@@ -66,7 +69,7 @@ export async function getCurrentUser() {
   try {
     rows = await db.select().from(users).where(eq(users.id, userId)).limit(1);
   } catch {
-    // database unreachable (e.g. during cold start) — treat as signed out
+    // Database unavailable during cold start: treat the session as signed out.
     return null;
   }
   const user = rows[0];

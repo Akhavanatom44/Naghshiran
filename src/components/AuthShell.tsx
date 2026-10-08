@@ -10,9 +10,9 @@ import {
 import { STORE_ADDRESS, STORE_PHONE_DISPLAY, STORE_PHONE_TEL } from "@/lib/format";
 
 const features = [
-  { icon: ShieldIcon, text: "حساب کاربری امن و رسمی با نشست رمزنگاری‌شده" },
-  { icon: PackageIcon, text: "پیگیری لحظه‌ای وضعیت سفارش تا تأیید نهایی ادمین" },
-  { icon: HeadsetIcon, text: "پشتیبانی سریع تلفنی و تلگرامی" },
+  { icon: ShieldIcon, text: "رمز عبور رمزنگاری می‌شود و نشست حساب امن است" },
+  { icon: PackageIcon, text: "شماره موبایل برای هماهنگی سفارش ذخیره می‌شود" },
+  { icon: HeadsetIcon, text: "پشتیبانی تلفنی فروشگاه نقشیران" },
 ];
 
 export default function AuthShell({ children }: { children: ReactNode }) {

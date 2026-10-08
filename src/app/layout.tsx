@@ -18,16 +18,19 @@ const vazirmatn = localFont({
   display: "swap",
 });
 
+const publicSiteUrl = process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "");
+
 export const metadata: Metadata = {
+  ...(publicSiteUrl ? { metadataBase: new URL(publicSiteUrl) } : {}),
   title: "نقشیران | فروشگاه تخصصی تجهیزات نقشه‌برداری",
   description:
-    "خرید آنلاین تجهیزات نقشه‌برداری در اصفهان؛ پرداخت با فیش واریزی، تأیید سریع ادمین، ارسال با پیک یا تحویل حضوری. اصفهان، خیابان استانداری، نبش خیابان فرشادی — ۰۹۳۱۱۴۷۸۹۷",
+    "خرید آنلاین تجهیزات نقشه‌برداری در اصفهان؛ پرداخت با فیش واریزی، تأیید سریع ادمین، ارسال با پیک یا تحویل حضوری. اصفهان، خیابان استانداری، نبش خیابان فرشادی — ۰۹۱۳۱۱۴۷۸۹۷",
   icons: { icon: "/icon.svg", apple: "/images/profile.png" },
   openGraph: {
     title: "نقشیران | فروشگاه تخصصی تجهیزات نقشه‌برداری",
     description:
       "تجهیزات حرفه‌ای نقشه‌برداری؛ خرید امن با فیش واریزی و پشتیبانی سریع. اصفهان، خیابان استانداری، نبش خیابان فرشادی.",
-    images: ["/images/profile.png"],
+    ...(publicSiteUrl ? { images: [`${publicSiteUrl}/images/profile.png`] } : {}),
   },
 };
 
