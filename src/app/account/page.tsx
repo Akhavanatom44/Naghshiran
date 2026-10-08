@@ -45,9 +45,9 @@ export default function AccountPage() {
               @{user.username}
             </p>
             {user.phone && (
-              <p className="mt-1 text-xs text-[var(--muted)]" dir="ltr">
+              <a href={`tel:${user.phone}`} className="mt-1 inline-block text-xs text-[var(--muted)] transition hover:text-teal-200" dir="ltr">
                 {user.phone}
-              </p>
+              </a>
             )}
           </div>
           {user.isAdmin && (

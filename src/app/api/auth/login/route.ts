@@ -1,14 +1,14 @@
 import { db } from "@/db";
 import { users } from "@/db/schema";
-import { eq } from "drizzle-orm";
+import { sql } from "drizzle-orm";
 import { verifyPassword, setSessionCookie } from "@/lib/auth";
 import { z } from "zod";
 
 export const dynamic = "force-dynamic";
 
 const schema = z.object({
-  username: z.string().trim().min(1),
-  password: z.string().min(1),
+  username: z.string().trim().min(1).max(64).transform((value) => value.toLowerCase()),
+  password: z.string().min(1).max(128),
 });
 
 export async function POST(req: Request) {
@@ -25,28 +25,28 @@ export async function POST(req: Request) {
   }
 
   const { username, password } = parsed.data;
-
-  let rows;
+  let user;
   try {
-    rows = await db.select().from(users).where(eq(users.username, username)).limit(1);
-  } catch {
+    const rows = await db.select().from(users).where(sql`lower(${users.username}) = ${username}`).limit(1);
+    user = rows[0];
+  } catch (error) {
+    console.error("[auth/login] database error", error);
     return Response.json(
-      { error: "سرویس احراز هویت موقتاً در دسترس نیست؛ لطفاً دوباره تلاش کنید" },
+      { error: "پایگاه داده در دسترس نیست؛ تنظیم DATABASE_URL را بررسی کنید" },
       { status: 503 }
     );
   }
-  const user = rows[0];
 
-  if (!user) {
+  if (!user || !(await verifyPassword(password, user.passwordHash))) {
     return Response.json({ error: "نام کاربری یا رمز عبور اشتباه است" }, { status: 401 });
   }
 
-  const valid = await verifyPassword(password, user.passwordHash);
-  if (!valid) {
-    return Response.json({ error: "نام کاربری یا رمز عبور اشتباه است" }, { status: 401 });
+  try {
+    await setSessionCookie(user.id);
+  } catch (error) {
+    console.error("[auth/login] session error", error);
+    return Response.json({ error: "تنظیم SESSION_SECRET را بررسی کنید" }, { status: 503 });
   }
-
-  await setSessionCookie(user.id);
 
   return Response.json({ ok: true });
 }

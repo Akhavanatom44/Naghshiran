@@ -1,24 +1,50 @@
 import { drizzle } from "drizzle-orm/node-postgres";
 import { Pool } from "pg";
 
-const databaseUrl = process.env.DATABASE_URL;
+type DrizzleDatabase = ReturnType<typeof drizzle>;
 
-if (!databaseUrl) {
-  throw new Error("DATABASE_URL is required");
-}
-
-const globalForDb = globalThis as typeof globalThis & {
-  __arenaNextJsPostgresqlPool?: Pool;
+type SharedDatabaseState = {
+  url: string;
+  pool: Pool;
+  db: DrizzleDatabase;
 };
 
-export const pool =
-  globalForDb.__arenaNextJsPostgresqlPool ??
-  new Pool({
-    connectionString: databaseUrl,
-  });
+const globalForDb = globalThis as typeof globalThis & {
+  __naghshiranDatabase?: SharedDatabaseState;
+};
 
-if (process.env.NODE_ENV !== "production") {
-  globalForDb.__arenaNextJsPostgresqlPool = pool;
+/**
+ * Create the database connection only when a query is made.
+ *
+ * Next.js imports route modules during `next build` to collect route metadata.
+ * Requiring DATABASE_URL at module scope made a perfectly valid build fail even
+ * when no page needed to connect to PostgreSQL. Runtime requests still receive
+ * a clear configuration error when the database is actually used.
+ */
+function getDatabase(): DrizzleDatabase {
+  const url = process.env.DATABASE_URL?.trim();
+  if (!url) {
+    throw new Error("DATABASE_URL is not configured; add it to the server runtime environment.");
+  }
+
+  if (!globalForDb.__naghshiranDatabase || globalForDb.__naghshiranDatabase.url !== url) {
+    const pool = new Pool({
+      connectionString: url,
+      max: 5,
+      idleTimeoutMillis: 30_000,
+      connectionTimeoutMillis: 8_000,
+    });
+    globalForDb.__naghshiranDatabase = { url, pool, db: drizzle(pool) };
+  }
+
+  return globalForDb.__naghshiranDatabase.db;
 }
 
-export const db = drizzle(pool);
+/** Lazy proxy: importing this module is safe during a build without DB secrets. */
+export const db = new Proxy({} as DrizzleDatabase, {
+  get(_target, property) {
+    const database = getDatabase();
+    const value = Reflect.get(database, property, database);
+    return typeof value === "function" ? value.bind(database) : value;
+  },
+});

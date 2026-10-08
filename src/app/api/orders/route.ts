@@ -1,8 +1,9 @@
 import { db } from "@/db";
-import { orders, orderItems, products } from "@/db/schema";
+import { orders, orderItems, products, users } from "@/db/schema";
 import { eq, desc, inArray } from "drizzle-orm";
 import { getCurrentUser } from "@/lib/auth";
 import { notifyAdminsAboutOrder } from "@/lib/telegram";
+import { normalizeIranianMobile } from "@/lib/phone";
 import { z } from "zod";
 
 export const dynamic = "force-dynamic";
@@ -15,9 +16,17 @@ const schema = z.object({
         quantity: z.number().int().positive().max(99),
       })
     )
-    .min(1, "سبد خرید شما خالی است"),
+    .min(1, "سبد خرید شما خالی است")
+    .refine((items) => new Set(items.map((item) => item.productId)).size === items.length, "سبد خرید شامل کالای تکراری است"),
   fullName: z.string().trim().min(2, "نام و نام خانوادگی را وارد کنید").max(128),
-  phone: z.string().trim().min(8, "شماره تلفن معتبر وارد کنید").max(32),
+  phone: z.string().trim().transform((value, ctx) => {
+    const normalized = normalizeIranianMobile(value);
+    if (!normalized) {
+      ctx.addIssue({ code: "custom", message: "شماره موبایل معتبر وارد کنید" });
+      return z.NEVER;
+    }
+    return normalized;
+  }),
   deliveryMethod: z.enum(["ship", "pickup"]),
   address: z.string().trim().max(500).optional().nullable(),
   receiptImage: z
@@ -80,29 +89,44 @@ export async function POST(req: Request) {
     return Response.json({ error: "برای ارسال با پیک، آدرس دقیق را وارد کنید" }, { status: 400 });
   }
 
-  const productIds = data.items.map((i) => i.productId);
+  const productIds = data.items.map((item) => item.productId);
   const dbProducts = await db.select().from(products).where(inArray(products.id, productIds));
+  const productMap = new Map(dbProducts.map((product) => [product.id, product]));
 
-  if (dbProducts.length !== new Set(productIds).size) {
-    return Response.json({ error: "برخی از محصولات انتخابی دیگر موجود نیستند" }, { status: 400 });
-  }
-
-  const productMap = new Map(dbProducts.map((p) => [p.id, p]));
-
+  type NewOrderItem = {
+    productId: number;
+    productName: string;
+    productCode: number;
+    unitPrice: number;
+    quantity: number;
+  };
   let totalAmount = 0;
-  const itemsForInsert = data.items.map((item) => {
-    const product = productMap.get(item.productId)!;
+  const itemsForInsert: NewOrderItem[] = [];
+  for (const item of data.items) {
+    const product = productMap.get(item.productId);
+    if (!product || !product.isActive) {
+      return Response.json({ error: "یکی از محصولات دیگر در فروشگاه موجود نیست" }, { status: 409 });
+    }
+    if (item.quantity > product.stock) {
+      return Response.json(
+        { error: `موجودی «${product.name}» برای تعداد درخواستی کافی نیست` },
+        { status: 409 }
+      );
+    }
     totalAmount += product.price * item.quantity;
-    return {
+    itemsForInsert.push({
       productId: product.id,
       productName: product.name,
       productCode: product.code,
       unitPrice: product.price,
       quantity: item.quantity,
-    };
-  });
+    });
+  }
 
   const orderId = await db.transaction(async (tx) => {
+    // Keep the contact details on the account current so the seller can follow up.
+    await tx.update(users).set({ fullName: data.fullName, phone: data.phone }).where(eq(users.id, user.id));
+
     const inserted = await tx
       .insert(orders)
       .values({

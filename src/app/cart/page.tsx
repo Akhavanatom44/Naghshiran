@@ -5,19 +5,42 @@ import { useRouter } from "next/navigation";
 import { useCart } from "@/lib/cart-context";
 import { useAuth } from "@/lib/auth-context";
 import { formatToman, faNum } from "@/lib/format";
+import { savePendingCartProduct } from "@/lib/cart-storage";
 import { CartIcon, MinusIcon, PlusIcon, TrashIcon } from "@/components/icons";
 
 export default function CartPage() {
-  const { items, updateQuantity, removeItem, totalAmount, clearCart, totalCount } = useCart();
+  const { items, ready, updateQuantity, removeItem, totalAmount, clearCart, totalCount } = useCart();
   const { user, loading } = useAuth();
   const router = useRouter();
 
   function goCheckout() {
-    if (!loading && !user) {
-      router.push("/login?next=/checkout");
+    if (loading || !ready) return;
+    if (!user) {
+      router.push("/login?mode=register&next=%2Fcheckout");
       return;
     }
     router.push("/checkout");
+  }
+
+  function increaseItem(item: (typeof items)[number]) {
+    if (loading || !ready) return;
+    if (!user) {
+      savePendingCartProduct({
+        productId: item.productId,
+        code: item.code,
+        name: item.name,
+        price: item.price,
+        imageUrl: item.imageUrl,
+        stock: item.stock,
+      });
+      router.push("/login?mode=register&next=%2Fcart");
+      return;
+    }
+    updateQuantity(item.productId, item.quantity + 1);
+  }
+
+  if (!ready) {
+    return <main className="mx-auto max-w-5xl px-4 py-24 text-center text-[var(--muted)]">در حال بارگذاری سبد خرید...</main>;
   }
 
   return (
@@ -82,9 +105,10 @@ export default function CartPage() {
                 <div className="flex flex-col items-end gap-2">
                   <div className="stepper-pill">
                     <button
-                      onClick={() => updateQuantity(item.productId, item.quantity + 1)}
+                      onClick={() => increaseItem(item)}
+                      disabled={loading || item.quantity >= item.stock}
                       aria-label="افزودن یک عدد"
-                      className="stepper-btn stepper-plus"
+                      className="stepper-btn stepper-plus disabled:cursor-not-allowed disabled:opacity-40"
                     >
                       <PlusIcon className="h-4 w-4" />
                     </button>
@@ -127,7 +151,7 @@ export default function CartPage() {
               <span className="text-sm font-bold text-white">مبلغ قابل پرداخت</span>
               <span className="text-base font-black text-amber-300">{formatToman(totalAmount)}</span>
             </div>
-            <button onClick={goCheckout} className="btn-primary mt-6 w-full rounded-xl py-3.5 text-sm">
+            <button onClick={goCheckout} disabled={loading} className="btn-primary mt-6 w-full rounded-xl py-3.5 text-sm">
               ادامه فرایند خرید
             </button>
             <p className="mt-3 text-center text-[11px] leading-5 text-[var(--muted)]">
