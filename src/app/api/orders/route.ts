@@ -1,4 +1,4 @@
-import { db } from "@/db";
+import { getDb } from "@/db";
 import { orders, orderItems, products, users } from "@/db/schema";
 import { eq, desc, inArray } from "drizzle-orm";
 import { getCurrentUser } from "@/lib/auth";
@@ -41,6 +41,7 @@ export async function GET() {
     return Response.json({ error: "برای مشاهده سفارش‌ها ابتدا وارد شوید" }, { status: 401 });
   }
 
+  const db = await getDb();
   const userOrders = await db
     .select()
     .from(orders)
@@ -89,6 +90,7 @@ export async function POST(req: Request) {
     return Response.json({ error: "برای ارسال با پیک، آدرس دقیق را وارد کنید" }, { status: 400 });
   }
 
+  const db = await getDb();
   const productIds = data.items.map((item) => item.productId);
   const dbProducts = await db.select().from(products).where(inArray(products.id, productIds));
   const productMap = new Map(dbProducts.map((product) => [product.id, product]));
@@ -123,35 +125,33 @@ export async function POST(req: Request) {
     });
   }
 
-  const orderId = await db.transaction(async (tx) => {
-    // Keep the contact details on the account current so the seller can follow up.
-    await tx.update(users).set({ fullName: data.fullName, phone: data.phone }).where(eq(users.id, user.id));
+  const insertedOrder = await db
+    .insert(orders)
+    .values({
+      userId: user.id,
+      status: "pending",
+      totalAmount,
+      fullName: data.fullName,
+      phone: data.phone,
+      deliveryMethod: data.deliveryMethod,
+      address: data.deliveryMethod === "ship" ? data.address ?? null : null,
+      receiptImage: data.receiptImage,
+    })
+    .returning({ id: orders.id });
+  const orderId = insertedOrder[0].id;
 
-    const inserted = await tx
-      .insert(orders)
-      .values({
-        userId: user.id,
-        status: "pending",
-        totalAmount,
-        fullName: data.fullName,
-        phone: data.phone,
-        deliveryMethod: data.deliveryMethod,
-        address: data.deliveryMethod === "ship" ? data.address ?? null : null,
-        receiptImage: data.receiptImage,
-      })
-      .returning({ id: orders.id });
-
-    const newOrderId = inserted[0].id;
-
-    await tx.insert(orderItems).values(
+  // D1 has no interactive transactions; `batch` applies both statements
+  // atomically. The account contact details are kept current so the seller
+  // can follow up, and the order items reference the new order id.
+  await db.batch([
+    db.update(users).set({ fullName: data.fullName, phone: data.phone }).where(eq(users.id, user.id)),
+    db.insert(orderItems).values(
       itemsForInsert.map((item) => ({
         ...item,
-        orderId: newOrderId,
+        orderId,
       }))
-    );
-
-    return newOrderId;
-  });
+    ),
+  ]);
 
   try {
     const notifyResult = await notifyAdminsAboutOrder({

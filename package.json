@@ -1,5 +1,5 @@
 {
-  "name": "nextjs-postgresql-template",
+  "name": "naghshiran",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -7,34 +7,38 @@
     "start": "next start",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
-    "db:push": "drizzle-kit push --config=drizzle.config.ts",
-    "db:seed": "node scripts/seed-catalog.mjs",
-    "catalog:images": "python3 scripts/generate-product-art.py"
+    "preview": "opennextjs-cloudflare build && opennextjs-cloudflare preview",
+    "deploy": "opennextjs-cloudflare build && opennextjs-cloudflare deploy",
+    "db:generate": "drizzle-kit generate --config=drizzle.config.ts",
+    "db:push": "node scripts/apply-d1-schema.mjs --remote",
+    "db:push:local": "node scripts/apply-d1-schema.mjs --local",
+    "db:seed": "node scripts/seed-catalog.mjs --remote",
+    "db:seed:local": "node scripts/seed-catalog.mjs --local",
+    "catalog:images": "python3 scripts/generate-product-art.py && node scripts/catalog-image-manifest.mjs"
   },
   "dependencies": {
     "@types/bcryptjs": "^2.4.6",
     "bcryptjs": "^3.0.3",
-    "dotenv": "17.3.1",
     "drizzle-orm": "0.45.2",
     "jose": "^6.2.12",
-    "next": "16.4.0",
-    "pg": "8.20.0",
+    "next": "16.3.8",
     "react": "19.2.6",
     "react-dom": "19.2.6",
     "vazirmatn": "^33.0.3",
     "zod": "^4.6.5"
   },
   "devDependencies": {
+    "@opennextjs/cloudflare": "^1.20.9",
     "@tailwindcss/postcss": "4.1.17",
     "@types/node": "22.19.15",
-    "@types/pg": "8.18.0",
     "@types/react": "19.2.14",
     "@types/react-dom": "19.2.3",
     "drizzle-kit": "0.31.11",
     "eslint": "9.39.4",
-    "eslint-config-next": "16.4.0",
+    "eslint-config-next": "16.3.8",
     "postcss": "8.5.29",
     "tailwindcss": "4.1.17",
-    "typescript": "5.9.3"
+    "typescript": "5.9.3",
+    "wrangler": "^4.148.0"
   }
 }

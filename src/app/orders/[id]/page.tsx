@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { redirect, notFound } from "next/navigation";
-import { db } from "@/db";
+import { getDb } from "@/db";
 import { orders, orderItems } from "@/db/schema";
 import { and, eq } from "drizzle-orm";
 import { getCurrentUser } from "@/lib/auth";
@@ -32,6 +32,7 @@ export default async function OrderDetailPage({
   let order: OrderRow | null = null;
   let items: ItemRow[] = [];
   try {
+    const db = await getDb();
     const rows = await db
       .select()
       .from(orders)

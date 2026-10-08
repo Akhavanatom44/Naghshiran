@@ -1,4 +1,4 @@
-import { db } from "@/db";
+import { getDb } from "@/db";
 import { products } from "@/db/schema";
 import { desc, eq } from "drizzle-orm";
 import ProductCatalog from "@/components/ProductCatalog";
@@ -14,6 +14,7 @@ export default async function HomePage() {
   let databaseIsEmpty = false;
 
   try {
+    const db = await getDb();
     const rows = await db
       .select()
       .from(products)
@@ -37,7 +38,7 @@ export default async function HomePage() {
     }
   } catch (error) {
     databaseAvailable = false;
-    console.warn("[home] PostgreSQL unavailable; showing the built-in catalog", error);
+    console.warn("[home] D1 database unavailable; showing the built-in catalog", error);
     items = CATALOG_PRODUCTS.map((product) => ({ ...product, canPurchase: false }));
   }
 

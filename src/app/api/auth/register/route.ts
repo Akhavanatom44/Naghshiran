@@ -1,4 +1,4 @@
-import { db } from "@/db";
+import { getDb } from "@/db";
 import { users } from "@/db/schema";
 import { eq, sql } from "drizzle-orm";
 import { hashPassword, setSessionCookie } from "@/lib/auth";
@@ -47,6 +47,7 @@ export async function POST(req: Request) {
   let userId: number;
 
   try {
+    const db = await getDb();
     const existingUsername = await db.select({ id: users.id }).from(users).where(sql`lower(${users.username}) = ${username}`).limit(1);
     if (existingUsername.length > 0) {
       return Response.json({ error: "این نام کاربری قبلاً ثبت شده است" }, { status: 409 });
@@ -67,12 +68,13 @@ export async function POST(req: Request) {
       .returning({ id: users.id });
     userId = inserted[0].id;
   } catch (error) {
-    if (typeof error === "object" && error !== null && "code" in error && error.code === "23505") {
+    // SQLite (D1) reports a violated UNIQUE constraint this way.
+    if (error instanceof Error && error.message.includes("UNIQUE constraint failed")) {
       return Response.json({ error: "نام کاربری یا شماره موبایل قبلاً ثبت شده است" }, { status: 409 });
     }
     console.error("[auth/register] database error", error);
     return Response.json(
-      { error: "پایگاه داده در دسترس نیست؛ تنظیم DATABASE_URL را بررسی کنید" },
+      { error: "پایگاه داده در دسترس نیست؛ اتصال D1 را در wrangler.jsonc بررسی کنید" },
       { status: 503 }
     );
   }

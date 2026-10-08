@@ -1,4 +1,4 @@
-import { db } from "@/db";
+import { getDb } from "@/db";
 import { orders, orderItems } from "@/db/schema";
 import { and, eq } from "drizzle-orm";
 import { getCurrentUser } from "@/lib/auth";
@@ -17,6 +17,7 @@ export async function GET(_req: Request, context: { params: Promise<{ id: string
     return Response.json({ error: "شناسه سفارش نامعتبر است" }, { status: 400 });
   }
 
+  const db = await getDb();
   const rows = await db
     .select()
     .from(orders)

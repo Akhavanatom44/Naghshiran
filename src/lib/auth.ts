@@ -1,7 +1,7 @@
 import { cookies } from "next/headers";
 import { SignJWT, jwtVerify } from "jose";
 import bcrypt from "bcryptjs";
-import { db } from "@/db";
+import { getDb } from "@/db";
 import { users } from "@/db/schema";
 import { eq } from "drizzle-orm";
 
@@ -67,6 +67,7 @@ export async function getCurrentUser() {
   if (!userId) return null;
   let rows;
   try {
+    const db = await getDb();
     rows = await db.select().from(users).where(eq(users.id, userId)).limit(1);
   } catch {
     // Database unavailable during cold start: treat the session as signed out.

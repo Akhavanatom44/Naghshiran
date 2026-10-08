@@ -1,50 +1,42 @@
-import { drizzle } from "drizzle-orm/node-postgres";
-import { Pool } from "pg";
+import { getCloudflareContext } from "@opennextjs/cloudflare";
+import { drizzle } from "drizzle-orm/d1";
+import * as schema from "./schema";
 
-type DrizzleDatabase = ReturnType<typeof drizzle>;
+/**
+ * The database is Cloudflare D1 (SQLite), reached through the `DB` binding
+ * declared in wrangler.jsonc. The previous node-postgres (`pg`) driver cannot
+ * run on Workers: it needs raw TCP sockets, and bundling it for the edge
+ * failed with `Could not resolve "pg-cloudflare"`.
+ */
 
-type SharedDatabaseState = {
-  url: string;
-  pool: Pool;
-  db: DrizzleDatabase;
-};
+function createDatabase(database: D1Database) {
+  return drizzle(database, { schema });
+}
+
+export type Database = ReturnType<typeof createDatabase>;
 
 const globalForDb = globalThis as typeof globalThis & {
-  __naghshiranDatabase?: SharedDatabaseState;
+  __naghshiranDatabase?: Database;
 };
 
 /**
- * Create the database connection only when a query is made.
+ * Resolve the D1-backed database for the current request.
  *
- * Next.js imports route modules during `next build` to collect route metadata.
- * Requiring DATABASE_URL at module scope made a perfectly valid build fail even
- * when no page needed to connect to PostgreSQL. Runtime requests still receive
- * a clear configuration error when the database is actually used.
+ * Next.js imports route modules during `next build` to collect route metadata,
+ * so the Cloudflare context is only touched when a query is actually made.
+ * Importing this module stays safe during a build without bindings, and
+ * runtime requests receive a clear error when the D1 binding is missing.
  */
-function getDatabase(): DrizzleDatabase {
-  const url = process.env.DATABASE_URL?.trim();
-  if (!url) {
-    throw new Error("DATABASE_URL is not configured; add it to the server runtime environment.");
+export async function getDb(): Promise<Database> {
+  if (!globalForDb.__naghshiranDatabase) {
+    const { env } = await getCloudflareContext({ async: true });
+    if (!env.DB) {
+      throw new Error(
+        "D1 binding `DB` is not configured; check the d1_databases section of wrangler.jsonc."
+      );
+    }
+    globalForDb.__naghshiranDatabase = createDatabase(env.DB);
   }
 
-  if (!globalForDb.__naghshiranDatabase || globalForDb.__naghshiranDatabase.url !== url) {
-    const pool = new Pool({
-      connectionString: url,
-      max: 5,
-      idleTimeoutMillis: 30_000,
-      connectionTimeoutMillis: 8_000,
-    });
-    globalForDb.__naghshiranDatabase = { url, pool, db: drizzle(pool) };
-  }
-
-  return globalForDb.__naghshiranDatabase.db;
+  return globalForDb.__naghshiranDatabase;
 }
-
-/** Lazy proxy: importing this module is safe during a build without DB secrets. */
-export const db = new Proxy({} as DrizzleDatabase, {
-  get(_target, property) {
-    const database = getDatabase();
-    const value = Reflect.get(database, property, database);
-    return typeof value === "function" ? value.bind(database) : value;
-  },
-});

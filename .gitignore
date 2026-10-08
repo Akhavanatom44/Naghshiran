@@ -7,10 +7,16 @@ out/
 next-env.d.ts
 tsconfig.tsbuildinfo
 
+# opennext / cloudflare build output
+.open-next/
+.wrangler/
+
 # env
 .env
 .env.local
 .env.*.local
+.dev.vars
+.dev.vars.*
 
 # misc
 .DS_Store
