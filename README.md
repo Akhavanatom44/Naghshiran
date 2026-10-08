@@ -19,7 +19,7 @@
 ## پایگاه داده (Cloudflare D1)
 
 - نام دیتابیس: `d1_naghshiran`
-- شناسه: `e67bb8bc-ad6c-4561-be92-5ec82a0d585b`
+- شناسه: `96fcda7f-4093-47d2-b210-75b749658c65`
 - binding در `wrangler.jsonc`: `DB`
 
 ساختار جداول در `src/db/schema.ts` (SQLite) تعریف شده و فایل‌های SQL آن در پوشه‌ی `drizzle/` قرار دارند. ستون‌های قیمت از نوع INTEGER 64 بیتی هستند و قیمت‌های میلیاردی تومان را بدون سرریز نگه می‌دارند.
@@ -62,19 +62,21 @@ TELEGRAM_ADMIN_CHAT_IDS=
 
 ## دیپلوی روی Cloudflare
 
-خطای قبلی (`Could not resolve "pg-cloudflare"`) به این دلیل بود که درایور `pg` روی Workers قابل اجرا نیست. پروژه اکنون کاملاً روی D1 کار می‌کند.
+این پروژه با **Next.js + OpenNext + Cloudflare Workers + D1** تنظیم شده است. در Cloudflare Workers Builds، برای جلوگیری از ورود OpenNext به حلقه‌ی بازگشتی، دستور build اصلی پروژه همان `npm run build` است و این دستور در `package.json` مستقیماً `opennextjs-cloudflare build` را اجرا می‌کند؛ OpenNext نیز از `buildCommand` موجود در `open-next.config.ts` برای اجرای `npm run build:next` استفاده می‌کند.
 
-تنظیمات Build در Cloudflare (Workers Builds):
+تنظیمات پیشنهادی Workers Builds:
 
 | تنظیم | مقدار |
 |---|---|
-| Build command | `npm run deploy` |
-| Deploy command | *(خالی بگذارید)* — یا اگر الزامی است: `npx wrangler deploy` |
+| Build command | `npm run build` |
+| Deploy command | `npm run deploy` |
 | Root directory | `/` |
 
-`npm run deploy` ابتدا `opennextjs-cloudflare build` را اجرا می‌کند و سپس Worker را به همراه binding دیتابیس D1 (از `wrangler.jsonc`) دیپلوی می‌کند. اگر Cloudflare فیلد Deploy command را الزامی کرد، Build command را `npx opennextjs-cloudflare build` و Deploy command را `npx opennextjs-cloudflare deploy` بگذارید.
+فایل `wrangler.jsonc` نیز Worker، assetها و binding دیتابیس D1 با نام `d1_naghshiran` و شناسه جدید را تعریف می‌کند.
 
-> نسخه‌ی Next.js روی `16.3.x` ثابت شده است، چون آداپتور OpenNext هنوز از manifest جدید Next.js 16.4 پشتیبانی نمی‌کند.
+در بخش **Build Variables and secrets** کلودفلر، مقدار `SESSION_SECRET` را با یک رشته تصادفی حداقل ۳۲ کاراکتری تنظیم کنید و در صورت استفاده از اعلان تلگرام، `TELEGRAM_BOT_TOKEN` و `TELEGRAM_ADMIN_CHAT_IDS` را نیز وارد کنید.
+
+`npm run deploy` برای محیطی مناسب است که build و deploy را در یک دستور انجام می‌دهد؛ در Workers Builds می‌توانید build و deploy را در دو مرحله‌ی بالا قرار دهید.
 
 ## تصاویر محصولات
 
