@@ -1,7 +1,7 @@
 // Sends new-order notifications (with the bank receipt photo and an
 // inline approve/reject keyboard) to every configured Telegram admin.
 // The actual button click is handled by the separate Python Telegram bot,
-// which shares the same PostgreSQL database and updates the order status
+// which shares the same D1 (SQLite) database and updates the order status
 // directly when an admin approves or rejects an order.
 
 type OrderItemLite = {

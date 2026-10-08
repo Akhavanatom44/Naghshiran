@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { db } from "@/db";
+import { getDb } from "@/db";
+import type { Database } from "@/db";
 import { orders, orderItems } from "@/db/schema";
 import { eq, desc, inArray } from "drizzle-orm";
 import { getCurrentUser } from "@/lib/auth";
@@ -19,7 +20,9 @@ export default async function OrdersPage() {
 
   let myOrders: OrderRow[] = [];
   let dbError = false;
+  let db: Database | null = null;
   try {
+    db = await getDb();
     myOrders = await db.select().from(orders).where(eq(orders.userId, user.id)).orderBy(desc(orders.createdAt));
   } catch {
     dbError = true;
@@ -27,7 +30,7 @@ export default async function OrdersPage() {
 
   const ids = myOrders.map((o) => o.id);
   let items: ItemRow[] = [];
-  if (!dbError && ids.length) {
+  if (!dbError && db && ids.length) {
     try {
       items = await db.select().from(orderItems).where(inArray(orderItems.orderId, ids));
     } catch {

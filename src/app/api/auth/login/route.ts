@@ -1,4 +1,4 @@
-import { db } from "@/db";
+import { getDb } from "@/db";
 import { users } from "@/db/schema";
 import { sql } from "drizzle-orm";
 import { verifyPassword, setSessionCookie } from "@/lib/auth";
@@ -27,12 +27,13 @@ export async function POST(req: Request) {
   const { username, password } = parsed.data;
   let user;
   try {
+    const db = await getDb();
     const rows = await db.select().from(users).where(sql`lower(${users.username}) = ${username}`).limit(1);
     user = rows[0];
   } catch (error) {
     console.error("[auth/login] database error", error);
     return Response.json(
-      { error: "پایگاه داده در دسترس نیست؛ تنظیم DATABASE_URL را بررسی کنید" },
+      { error: "پایگاه داده در دسترس نیست؛ اتصال D1 را در wrangler.jsonc بررسی کنید" },
       { status: 503 }
     );
   }

@@ -1,61 +1,64 @@
-import {
-  pgTable,
-  serial,
-  text,
-  varchar,
-  integer,
-  bigint,
-  boolean,
-  timestamp,
-} from "drizzle-orm/pg-core";
+import { integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
 
-export const users = pgTable("users", {
-  id: serial("id").primaryKey(),
-  username: varchar("username", { length: 64 }).notNull().unique(),
+/**
+ * D1 (SQLite) schema. Table and column names are kept identical to the
+ * previous PostgreSQL layout so existing SQL and tooling keep working.
+ * SQLite stores integers as 64-bit values, so Toman prices (up to a few
+ * billion) and order totals fit without a BIGINT type.
+ */
+
+export const users = sqliteTable("users", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  username: text("username", { length: 64 }).notNull().unique(),
   passwordHash: text("password_hash").notNull(),
-  fullName: varchar("full_name", { length: 128 }),
-  phone: varchar("phone", { length: 32 }),
-  isAdmin: boolean("is_admin").notNull().default(false),
-  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  fullName: text("full_name", { length: 128 }),
+  phone: text("phone", { length: 32 }),
+  isAdmin: integer("is_admin", { mode: "boolean" }).notNull().default(false),
+  createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull().defaultNow(),
 });
 
-export const products = pgTable("products", {
-  id: serial("id").primaryKey(),
+export const products = sqliteTable("products", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
   code: integer("code").notNull().unique(),
-  name: varchar("name", { length: 200 }).notNull(),
+  name: text("name", { length: 200 }).notNull(),
   description: text("description").notNull().default(""),
-  category: varchar("category", { length: 64 }).notNull().default("سایر"),
-  // Prices are stored in Toman. BIGINT is required for the supplied Leica prices.
-  price: bigint("price", { mode: "number" }).notNull(),
+  category: text("category", { length: 64 }).notNull().default("سایر"),
+  // Prices are stored in Toman. SQLite INTEGER is 64-bit, which is required
+  // for the supplied Leica prices.
+  price: integer("price").notNull(),
   imageUrl: text("image_url").notNull().default(""),
-  isActive: boolean("is_active").notNull().default(true),
+  isActive: integer("is_active", { mode: "boolean" }).notNull().default(true),
   stock: integer("stock").notNull().default(0),
-  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull().defaultNow(),
+  updatedAt: integer("updated_at", { mode: "timestamp_ms" }).notNull().defaultNow(),
 });
 
-export const orders = pgTable("orders", {
-  id: serial("id").primaryKey(),
-  userId: integer("user_id").notNull().references(() => users.id),
-  status: varchar("status", { length: 16 }).notNull().default("pending"), // pending | approved | rejected
-  totalAmount: bigint("total_amount", { mode: "number" }).notNull(),
-  fullName: varchar("full_name", { length: 128 }).notNull(),
-  phone: varchar("phone", { length: 32 }).notNull(),
-  deliveryMethod: varchar("delivery_method", { length: 16 }).notNull(), // ship | pickup
+export const orders = sqliteTable("orders", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  userId: integer("user_id")
+    .notNull()
+    .references(() => users.id),
+  status: text("status", { length: 16 }).notNull().default("pending"), // pending | approved | rejected
+  totalAmount: integer("total_amount").notNull(),
+  fullName: text("full_name", { length: 128 }).notNull(),
+  phone: text("phone", { length: 32 }).notNull(),
+  deliveryMethod: text("delivery_method", { length: 16 }).notNull(), // ship | pickup
   address: text("address"),
   receiptImage: text("receipt_image").notNull(),
   adminNote: text("admin_note"),
-  telegramStatus: varchar("telegram_status", { length: 16 }).notNull().default("not_sent"), // not_sent | sent | failed
-  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  telegramStatus: text("telegram_status", { length: 16 }).notNull().default("not_sent"), // not_sent | sent | failed
+  createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull().defaultNow(),
+  updatedAt: integer("updated_at", { mode: "timestamp_ms" }).notNull().defaultNow(),
 });
 
-export const orderItems = pgTable("order_items", {
-  id: serial("id").primaryKey(),
-  orderId: integer("order_id").notNull().references(() => orders.id, { onDelete: "cascade" }),
+export const orderItems = sqliteTable("order_items", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  orderId: integer("order_id")
+    .notNull()
+    .references(() => orders.id, { onDelete: "cascade" }),
   productId: integer("product_id").references(() => products.id),
-  productName: varchar("product_name", { length: 200 }).notNull(),
+  productName: text("product_name", { length: 200 }).notNull(),
   productCode: integer("product_code").notNull(),
-  unitPrice: bigint("unit_price", { mode: "number" }).notNull(),
+  unitPrice: integer("unit_price").notNull(),
   quantity: integer("quantity").notNull(),
 });
