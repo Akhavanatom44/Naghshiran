@@ -1,7 +1,9 @@
 import { defineCloudflareConfig } from "@opennextjs/cloudflare";
 
-// buildCommand is explicit so OpenNext never calls "npm run build" recursively.
+// Cloudflare Workers Builds runs npm run build. Keep that command as the
+// OpenNext entry point, and explicitly tell OpenNext which script performs
+// the underlying Next.js build so it never recurses back into itself.
 export default {
   ...defineCloudflareConfig(),
-  buildCommand: "npx next build",
+  buildCommand: "npm run build:next",
 };
