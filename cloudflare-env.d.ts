@@ -1,11 +1,11 @@
 /**
  * Cloudflare Workers bindings used by this app.
  *
- * The `DB` binding is the D1 database `d1_naghshiran`
- * (database_id: e67bb8bc-ad6c-4561-be92-5ec82a0d585b) configured in wrangler.jsonc.
+ * The DB binding is the D1 database d1_naghshiran
+ * (database_id: 96fcda7f-4093-47d2-b210-75b749658c65) configured in wrangler.jsonc.
  *
  * Minimal structural types are declared here on purpose: pulling in the full
- * `@cloudflare/workers-types` package conflicts with `@types/node` in this
+ * @cloudflare/workers-types package conflicts with @types/node in this
  * Next.js project, while drizzle-orm's D1 driver accepts the shapes below.
  */
 
