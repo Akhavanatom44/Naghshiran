@@ -10,7 +10,7 @@ import { STORE_PHONE_DISPLAY, STORE_PHONE_TEL } from "@/lib/format";
 
 const links = [
   { href: "/", label: "فروشگاه" },
-  { href: "/#special-offers", label: "تخفیفات ویژه" },
+  { href: "/#special-offers", label: "محصولات تخفیف‌دار" },
   { href: "/orders", label: "سفارش‌های من" },
 ];
 

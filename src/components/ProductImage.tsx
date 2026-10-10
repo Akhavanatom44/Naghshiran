@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { catalogImageUrl } from "@/data/catalog";
 
 type ProductImageProps = {
   code: number;
@@ -12,7 +13,7 @@ type ProductImageProps = {
   height?: number;
 };
 
-/** Keep catalog and cart images visible when a saved/custom image URL is stale. */
+/** Try the local catalog photo before its illustration when a saved URL is stale. */
 export default function ProductImage({
   code,
   name,
@@ -22,10 +23,13 @@ export default function ProductImage({
   width = 640,
   height = 640,
 }: ProductImageProps) {
-  const fallback = `/images/catalog/${code}.svg`;
-  const requested = imageUrl?.trim() || fallback;
-  const [failedSource, setFailedSource] = useState<string | null>(null);
-  const source = failedSource === requested ? fallback : requested;
+  const catalogSource = catalogImageUrl(code);
+  const illustration = `/images/catalog/${code}.svg`;
+  const requested = imageUrl?.trim() || catalogSource;
+  const sources = [...new Set([requested, catalogSource, illustration])];
+  const [failedSources, setFailedSources] = useState<string[]>([]);
+  const source =
+    sources.find((candidate) => !failedSources.includes(candidate)) ?? illustration;
 
   return (
     // eslint-disable-next-line @next/next/no-img-element
@@ -37,7 +41,9 @@ export default function ProductImage({
       width={width}
       height={height}
       onError={() => {
-        if (source !== fallback) setFailedSource(requested);
+        setFailedSources((previous) =>
+          previous.includes(source) ? previous : [...previous, source],
+        );
       }}
       className={className}
     />

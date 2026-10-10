@@ -14,7 +14,7 @@ function normalizeSearch(value: string) {
     .replace(/\u200c/g, " ");
 }
 
-const ALL = "همه محصولات";
+const ALL = "کلیه محصولات";
 type SortOrder = "featured" | "price-ascending" | "price-descending" | "name";
 
 export default function ProductCatalog({
@@ -64,6 +64,18 @@ export default function ProductCatalog({
 
   return (
     <main className="mx-auto max-w-7xl px-4 pb-20 pt-5 sm:px-6 sm:pt-8">
+      <header id="catalog-intro" aria-labelledby="catalog-title" className="mb-8">
+        <p className="mb-2 flex items-center gap-2 text-xs font-bold text-teal-200">
+          <CrosshairIcon className="h-4 w-4 shrink-0" />
+          فروشگاه تخصصی تجهیزات نقشه‌برداری نقشیران
+        </p>
+        <h1 id="catalog-title" className="text-2xl font-black text-white sm:text-3xl">
+          محصولات <span className="gradient-text">نقشه‌برداری</span>
+        </h1>
+        <p className="mt-1.5 text-xs leading-6 text-[var(--muted)] sm:text-sm">
+          مدل موردنظرتان را جست‌وجو کنید یا دسته‌بندی را انتخاب کنید؛ برای افزودن به سبد، وارد حساب شوید یا ثبت‌نام کنید.
+        </p>
+      </header>
       {specialOffers.length > 0 && (
         <section
           id="special-offers"
@@ -79,7 +91,7 @@ export default function ProductCatalog({
                 id="offers-title"
                 className="text-xl font-black text-white sm:text-2xl"
               >
-                تخفیفات <span className="gradient-text">ویژه</span>
+                محصولات <span className="gradient-text">تخفیف‌دار</span>
               </h2>
               <p className="mt-2 text-xs text-[var(--muted)]">
                 قیمت ویژه در سبد خرید و سفارش نیز اعمال می‌شود.
@@ -89,7 +101,7 @@ export default function ProductCatalog({
               href="#shop"
               className="btn-outline rounded-xl px-4 py-2 text-xs"
             >
-              همهٔ محصولات ↓
+              کلیه محصولات ↓
             </a>
           </div>
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4">
@@ -99,21 +111,11 @@ export default function ProductCatalog({
           </div>
         </section>
       )}
-      <section id="shop" className="scroll-mt-24">
+      <section id="shop" aria-labelledby="products-title" className="scroll-mt-24">
         <div className="mb-5 flex flex-wrap items-end justify-between gap-3">
-          <div>
-            <p className="mb-2 flex items-center gap-2 text-xs font-bold text-teal-200">
-              <CrosshairIcon className="h-4 w-4" />
-              فروشگاه تخصصی تجهیزات نقشه‌برداری نقشیران
-            </p>
-            <h1 className="text-2xl font-black text-white sm:text-3xl">
-              محصولات <span className="gradient-text">نقشه‌برداری</span>
-            </h1>
-            <p className="mt-1.5 text-xs leading-6 text-[var(--muted)] sm:text-sm">
-              مدل موردنظرتان را جست‌وجو کنید یا دسته‌بندی را انتخاب کنید؛ برای
-              افزودن به سبد، وارد حساب شوید یا ثبت‌نام کنید.
-            </p>
-          </div>
+          <h2 id="products-title" className="text-xl font-black text-white sm:text-2xl">
+            کلیه محصولات
+          </h2>
           <span className="rounded-full border border-[rgba(148,184,220,0.16)] bg-white/5 px-3.5 py-1.5 text-xs font-bold text-[var(--muted)]">
             {visibleProducts.length.toLocaleString("fa-IR")} از{" "}
             {products.length.toLocaleString("fa-IR")} محصول

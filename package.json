@@ -18,7 +18,8 @@
     "catalog:images": "python3 scripts/generate-product-art.py && node scripts/catalog-image-manifest.mjs",
     "test": "tsx --test tests/store.test.ts && python3 tests/checkout-db.test.py",
     "test:e2e": "tsx tests/browser-smoke.ts",
-    "catalog:optimize": "node scripts/optimize-catalog-images.mjs && node scripts/catalog-image-manifest.mjs"
+    "catalog:optimize": "node scripts/optimize-catalog-images.mjs && node scripts/catalog-image-manifest.mjs",
+    "test:catalog": "tsx tests/catalog-browser.ts"
   },
   "dependencies": {
     "@types/bcryptjs": "^2.4.6",

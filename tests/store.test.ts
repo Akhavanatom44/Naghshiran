@@ -2,6 +2,10 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import { readFileSync, existsSync } from "node:fs";
 import sharp from "sharp";
+import { createElement } from "react";
+import { renderToStaticMarkup } from "react-dom/server";
+import ProductCatalog from "../src/components/ProductCatalog";
+import ProductImage from "../src/components/ProductImage";
 import {
   addCartItem,
   setCartQuantity,
@@ -180,4 +184,44 @@ test("pending guest click is tab scoped, expires and tolerates blocked storage",
   });
   assert.equal(savePendingCartProduct(product), false);
   assert.equal(pendingProductCode(), null);
+});
+
+
+test("catalog introduction remains first even without offers or products", () => {
+  const markup = renderToStaticMarkup(createElement(ProductCatalog, { products: [] }));
+  const introIndex = markup.indexOf('id="catalog-intro"');
+  const shopIndex = markup.indexOf('id="shop"');
+  assert.ok(introIndex >= 0 && introIndex < shopIndex);
+  assert.ok(!markup.includes('id="special-offers"'));
+  assert.equal((markup.match(/<h1\b/g) ?? []).length, 1);
+  assert.ok(markup.includes('id="products-title"'));
+  assert.ok(markup.includes("فروشگاه تخصصی تجهیزات نقشه‌برداری نقشیران"));
+  assert.ok(markup.includes("کلیه محصولات"));
+});
+
+test("missing image URL starts with the optimized catalog photo", () => {
+  const markup = renderToStaticMarkup(createElement(ProductImage, {
+    code: 96024,
+    name: "باتری",
+    imageUrl: "  ",
+  }));
+  assert.ok(markup.includes('src="/images/catalog/96024.webp"'));
+});
+
+test("new studio images and every SVG fallback are decodable", async () => {
+  const codes = [96021, 96022, 96023, 96024, 96025, 96026, 96027, 96028, 96029, 96032];
+  for (const code of codes) {
+    const photo = await sharp(`public/images/catalog/${code}.jpg`).metadata();
+    assert.equal(photo.format, "jpeg");
+    assert.ok(photo.width && photo.height);
+    const optimized = await sharp(`public/images/catalog/${code}.webp`).metadata();
+    assert.equal(optimized.width, 640);
+    assert.equal(optimized.height, 640);
+  }
+  const catalog = JSON.parse(readFileSync("src/data/catalog.json", "utf8"));
+  for (const { code } of catalog) {
+    const fallback = await sharp(`public/images/catalog/${code}.svg`).metadata();
+    assert.equal(fallback.format, "svg");
+    assert.ok(fallback.width && fallback.height);
+  }
 });
