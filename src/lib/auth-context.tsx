@@ -1,6 +1,13 @@
 "use client";
 
-import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from "react";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useState,
+  type ReactNode,
+} from "react";
 
 export type CurrentUser = {
   id: number;
@@ -13,7 +20,7 @@ export type CurrentUser = {
 type AuthContextValue = {
   user: CurrentUser | null;
   loading: boolean;
-  refresh: () => Promise<void>;
+  refresh: () => Promise<CurrentUser | null>;
   logout: () => Promise<void>;
 };
 
@@ -26,17 +33,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const refresh = useCallback(async () => {
     try {
       const res = await fetch("/api/auth/me", { cache: "no-store" });
+      if (!res.ok) throw new Error("session check failed");
       const data = await res.json();
       setUser(data.user ?? null);
+      return data.user ?? null;
     } catch {
-      setUser(null);
+      return null;
     } finally {
       setLoading(false);
     }
   }, []);
 
   const logout = useCallback(async () => {
-    await fetch("/api/auth/logout", { method: "POST" });
+    const response = await fetch("/api/auth/logout", { method: "POST" });
+    if (!response.ok) throw new Error("خروج انجام نشد؛ دوباره تلاش کنید");
     setUser(null);
   }, []);
 

@@ -4,35 +4,101 @@ import { useMemo, useState } from "react";
 import ProductCard, { type ProductForCard } from "@/components/ProductCard";
 import { CrosshairIcon } from "@/components/icons";
 
+function normalizeSearch(value: string) {
+  return value
+    .toLocaleLowerCase("fa")
+    .replace(/ي/g, "ی")
+    .replace(/ك/g, "ک")
+    .replace(/[۰-۹]/g, (digit) => String("۰۱۲۳۴۵۶۷۸۹".indexOf(digit)))
+    .replace(/[٠-٩]/g, (digit) => String("٠١٢٣٤٥٦٧٨٩".indexOf(digit)))
+    .replace(/\u200c/g, " ");
+}
+
 const ALL = "همه محصولات";
 type SortOrder = "featured" | "price-ascending" | "price-descending" | "name";
 
-export default function ProductCatalog({ products }: { products: ProductForCard[] }) {
+export default function ProductCatalog({
+  products,
+}: {
+  products: ProductForCard[];
+}) {
   const [query, setQuery] = useState("");
   const [activeCategory, setActiveCategory] = useState(ALL);
   const [sortOrder, setSortOrder] = useState<SortOrder>("featured");
 
   const categories = useMemo(
-    () => [ALL, ...new Set(products.map((product) => product.category).filter((value): value is string => Boolean(value)))],
-    [products]
+    () => [
+      ALL,
+      ...new Set(
+        products
+          .map((product) => product.category)
+          .filter((value): value is string => Boolean(value)),
+      ),
+    ],
+    [products],
   );
 
   const visibleProducts = useMemo(() => {
-    const normalizedQuery = query.trim().toLocaleLowerCase("fa");
+    const normalizedQuery = normalizeSearch(query.trim());
     const matches = products.filter((product) => {
-      const matchesCategory = activeCategory === ALL || product.category === activeCategory;
+      const matchesCategory =
+        activeCategory === ALL || product.category === activeCategory;
       const searchable = `${product.name} ${product.description} ${product.code} ${product.category ?? ""}`;
-      return matchesCategory && searchable.toLocaleLowerCase("fa").includes(normalizedQuery);
+      return (
+        matchesCategory && normalizeSearch(searchable).includes(normalizedQuery)
+      );
     });
 
-    if (sortOrder === "price-ascending") return matches.sort((a, b) => a.price - b.price);
-    if (sortOrder === "price-descending") return matches.sort((a, b) => b.price - a.price);
-    if (sortOrder === "name") return matches.sort((a, b) => a.name.localeCompare(b.name, "fa"));
+    if (sortOrder === "price-ascending")
+      return matches.sort((a, b) => a.price - b.price);
+    if (sortOrder === "price-descending")
+      return matches.sort((a, b) => b.price - a.price);
+    if (sortOrder === "name")
+      return matches.sort((a, b) => a.name.localeCompare(b.name, "fa"));
     return matches;
   }, [products, query, activeCategory, sortOrder]);
 
+  const specialOffers = products.filter(
+    (product) => (product.discountPercent ?? 0) > 0 && product.stock > 0,
+  );
+
   return (
     <main className="mx-auto max-w-7xl px-4 pb-20 pt-5 sm:px-6 sm:pt-8">
+      {specialOffers.length > 0 && (
+        <section
+          id="special-offers"
+          aria-labelledby="offers-title"
+          className="special-offers mb-9 scroll-mt-24 rounded-3xl p-3 sm:p-5"
+        >
+          <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <p className="mb-1 text-xs font-bold text-teal-200">
+                انتخاب‌های اقتصادی نقشیران
+              </p>
+              <h2
+                id="offers-title"
+                className="text-xl font-black text-white sm:text-2xl"
+              >
+                تخفیفات <span className="gradient-text">ویژه</span>
+              </h2>
+              <p className="mt-2 text-xs text-[var(--muted)]">
+                قیمت ویژه در سبد خرید و سفارش نیز اعمال می‌شود.
+              </p>
+            </div>
+            <a
+              href="#shop"
+              className="btn-outline rounded-xl px-4 py-2 text-xs"
+            >
+              همهٔ محصولات ↓
+            </a>
+          </div>
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4">
+            {specialOffers.map((product, index) => (
+              <ProductCard key={product.id} product={product} index={index} />
+            ))}
+          </div>
+        </section>
+      )}
       <section id="shop" className="scroll-mt-24">
         <div className="mb-5 flex flex-wrap items-end justify-between gap-3">
           <div>
@@ -44,11 +110,13 @@ export default function ProductCatalog({ products }: { products: ProductForCard[
               محصولات <span className="gradient-text">نقشه‌برداری</span>
             </h1>
             <p className="mt-1.5 text-xs leading-6 text-[var(--muted)] sm:text-sm">
-              مدل موردنظرتان را جست‌وجو کنید یا دسته‌بندی را انتخاب کنید؛ برای افزودن به سبد، ثبت‌نام لازم است.
+              مدل موردنظرتان را جست‌وجو کنید یا دسته‌بندی را انتخاب کنید؛ برای
+              افزودن به سبد، وارد حساب شوید یا ثبت‌نام کنید.
             </p>
           </div>
           <span className="rounded-full border border-[rgba(148,184,220,0.16)] bg-white/5 px-3.5 py-1.5 text-xs font-bold text-[var(--muted)]">
-            {visibleProducts.length.toLocaleString("fa-IR")} از {products.length.toLocaleString("fa-IR")} محصول
+            {visibleProducts.length.toLocaleString("fa-IR")} از{" "}
+            {products.length.toLocaleString("fa-IR")} محصول
           </span>
         </div>
 
@@ -74,7 +142,9 @@ export default function ProductCatalog({ products }: { products: ProductForCard[
               className="input-field pr-11"
             />
           </label>
-          <label className="sr-only" htmlFor="catalog-sort">مرتب‌سازی محصولات</label>
+          <label className="sr-only" htmlFor="catalog-sort">
+            مرتب‌سازی محصولات
+          </label>
           <select
             id="catalog-sort"
             value={sortOrder}
@@ -88,7 +158,10 @@ export default function ProductCatalog({ products }: { products: ProductForCard[
           </select>
         </div>
 
-        <div className="mb-5 flex gap-2 overflow-x-auto pb-1" aria-label="دسته‌بندی محصولات">
+        <div
+          className="mb-5 flex gap-2 overflow-x-auto pb-1"
+          aria-label="دسته‌بندی محصولات"
+        >
           {categories.map((category) => (
             <button
               key={category}
@@ -108,8 +181,12 @@ export default function ProductCatalog({ products }: { products: ProductForCard[
 
         {visibleProducts.length === 0 ? (
           <div className="glass-card rounded-3xl p-12 text-center">
-            <p className="font-bold text-white">محصولی با این مشخصات پیدا نشد</p>
-            <p className="mt-2 text-sm text-[var(--muted)]">عبارت جست‌وجو یا دسته‌بندی را تغییر دهید.</p>
+            <p className="font-bold text-white">
+              محصولی با این مشخصات پیدا نشد
+            </p>
+            <p className="mt-2 text-sm text-[var(--muted)]">
+              عبارت جست‌وجو یا دسته‌بندی را تغییر دهید.
+            </p>
             <button
               onClick={() => {
                 setQuery("");

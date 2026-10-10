@@ -5,6 +5,8 @@ import { initOpenNextCloudflareForDev } from "@opennextjs/cloudflare";
 // wrangler.jsonc. No-op outside the local dev server.
 initOpenNextCloudflareForDev();
 
-const nextConfig: NextConfig = {};
+const nextConfig: NextConfig = {
+  allowedDevOrigins: ["*.e2b.app"],
+};
 
 export default nextConfig;

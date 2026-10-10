@@ -1,3 +1,4 @@
+import { runtimeEnv } from "@/lib/runtime-env";
 // Sends new-order notifications (with the bank receipt photo and an
 // inline approve/reject keyboard) to every configured Telegram admin.
 // The actual button click is handled by the separate Python Telegram bot,
@@ -35,12 +36,12 @@ function dataUrlToBuffer(dataUrl: string): { buffer: Buffer; mime: string } {
 }
 
 export async function notifyAdminsAboutOrder(order: OrderForTelegram) {
-  const token = process.env.TELEGRAM_BOT_TOKEN;
-  const adminIdsRaw = process.env.TELEGRAM_ADMIN_CHAT_IDS;
+  const token = runtimeEnv("TELEGRAM_BOT_TOKEN");
+  const adminIdsRaw = runtimeEnv("TELEGRAM_ADMIN_CHAT_IDS");
 
   if (!token || !adminIdsRaw) {
     console.warn(
-      "[telegram] TELEGRAM_BOT_TOKEN / TELEGRAM_ADMIN_CHAT_IDS not configured, skipping notification"
+      "[telegram] TELEGRAM_BOT_TOKEN / TELEGRAM_ADMIN_CHAT_IDS not configured, skipping notification",
     );
     return { ok: false as const, reason: "not_configured" };
   }
@@ -58,8 +59,8 @@ export async function notifyAdminsAboutOrder(order: OrderForTelegram) {
     .map(
       (item, idx) =>
         `${idx + 1}. ${item.productName} (کد ${item.productCode}) × ${item.quantity} = ${formatToman(
-          item.unitPrice * item.quantity
-        )}`
+          item.unitPrice * item.quantity,
+        )}`,
     )
     .join("\n");
 
@@ -90,7 +91,7 @@ export async function notifyAdminsAboutOrder(order: OrderForTelegram) {
     adminIds.map(async (chatId) => {
       const formData = new FormData();
       formData.append("chat_id", chatId);
-      formData.append("caption", caption);
+      formData.append("caption", Array.from(caption).slice(0, 1024).join(""));
       formData.append(
         "reply_markup",
         JSON.stringify({
@@ -100,25 +101,29 @@ export async function notifyAdminsAboutOrder(order: OrderForTelegram) {
               { text: "❌ رد سفارش", callback_data: `reject:${order.id}` },
             ],
           ],
-        })
+        }),
       );
       formData.append(
         "photo",
         new Blob([new Uint8Array(buffer)], { type: mime }),
-        `receipt-${order.id}.${ext}`
+        `receipt-${order.id}.${ext}`,
       );
 
-      const res = await fetch(`https://api.telegram.org/bot${token}/sendPhoto`, {
-        method: "POST",
-        body: formData,
-      });
+      const res = await fetch(
+        `https://api.telegram.org/bot${token}/sendPhoto`,
+        {
+          method: "POST",
+          body: formData,
+          signal: AbortSignal.timeout(8000),
+        },
+      );
 
       if (!res.ok) {
         const text = await res.text();
         throw new Error(`Telegram API error: ${res.status} ${text}`);
       }
       return res.json();
-    })
+    }),
   );
 
   const anyFailed = results.some((r) => r.status === "rejected");

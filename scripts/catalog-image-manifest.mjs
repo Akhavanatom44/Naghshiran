@@ -14,9 +14,10 @@ const catalog = JSON.parse(readFileSync(path.join(root, "src/data/catalog.json")
 const manifest = {};
 let photos = 0;
 for (const { code } of catalog) {
-  const jpg = existsSync(path.join(root, "public/images/catalog", `${code}.jpg`));
-  if (jpg) photos++;
-  manifest[code] = `/images/catalog/${code}.${jpg ? "jpg" : "svg"}`;
+  const extension = ["webp", "jpg", "png", "svg"].find((ext) => existsSync(path.join(root, "public/images/catalog", `${code}.${ext}`)));
+  if (!extension) throw new Error(`No image found for product ${code}`);
+  if (extension !== "svg") photos++;
+  manifest[code] = `/images/catalog/${code}.${extension}`;
 }
 writeFileSync(path.join(root, "src/data/catalog-images.json"), JSON.stringify(manifest, null, 2) + "\n");
-console.log(`catalog-images.json written: ${photos}/${catalog.length} products have photos.`);
+console.log(`catalog-images.json written: ${photos}/${catalog.length} products have raster images (generated or illustrated).`);

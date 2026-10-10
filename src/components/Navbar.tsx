@@ -10,11 +10,12 @@ import { STORE_PHONE_DISPLAY, STORE_PHONE_TEL } from "@/lib/format";
 
 const links = [
   { href: "/", label: "فروشگاه" },
+  { href: "/#special-offers", label: "تخفیفات ویژه" },
   { href: "/orders", label: "سفارش‌های من" },
 ];
 
 export default function Navbar() {
-  const { totalCount } = useCart();
+  const { totalCount, clearCart, showToast } = useCart();
   const { user, loading, logout } = useAuth();
   const pathname = usePathname();
   const router = useRouter();
@@ -25,7 +26,9 @@ export default function Navbar() {
         <Link href="/" className="flex min-w-0 items-center gap-2.5">
           <Logo size={42} />
           <span className="flex min-w-0 flex-col leading-tight">
-            <span className="text-lg font-black text-white sm:text-xl">نقشیران</span>
+            <span className="text-lg font-black text-white sm:text-xl">
+              نقشیران
+            </span>
             <span className="hidden truncate text-[11px] font-medium text-[var(--muted)] sm:block">
               تجهیزات تخصصی نقشه‌برداری
             </span>
@@ -77,10 +80,16 @@ export default function Navbar() {
           <div className="hidden items-center gap-2 md:flex">
             {!loading && !user && (
               <>
-                <Link href="/login" className="btn-outline rounded-xl px-4 py-2.5 text-sm">
+                <Link
+                  href="/login"
+                  className="btn-outline rounded-xl px-4 py-2.5 text-sm"
+                >
                   ورود
                 </Link>
-                <Link href="/register" className="btn-primary rounded-xl px-4 py-2.5 text-sm">
+                <Link
+                  href="/register"
+                  className="btn-primary rounded-xl px-4 py-2.5 text-sm"
+                >
                   ثبت‌نام
                 </Link>
               </>
@@ -98,9 +107,14 @@ export default function Navbar() {
                 </Link>
                 <button
                   onClick={async () => {
-                    await logout();
-                    router.push("/");
-                    router.refresh();
+                    try {
+                      await logout();
+                      clearCart();
+                      router.push("/");
+                      router.refresh();
+                    } catch {
+                      showToast("خروج انجام نشد؛ دوباره تلاش کنید");
+                    }
                   }}
                   className="rounded-xl px-3 py-2.5 text-sm font-bold text-rose-300 transition hover:bg-rose-500/10"
                 >
@@ -123,4 +137,3 @@ export default function Navbar() {
     </header>
   );
 }
-

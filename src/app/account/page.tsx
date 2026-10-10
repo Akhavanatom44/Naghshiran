@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useCart } from "@/lib/cart-context";
 import { useAuth } from "@/lib/auth-context";
 import {
   LogOutIcon,
@@ -15,6 +16,7 @@ import { STORE_PHONE_DISPLAY, STORE_PHONE_TEL } from "@/lib/format";
 export default function AccountPage() {
   const { user, loading, logout } = useAuth();
   const router = useRouter();
+  const { clearCart, showToast } = useCart();
 
   useEffect(() => {
     if (!loading && !user) router.replace("/login?next=/account");
@@ -40,12 +42,18 @@ export default function AccountPage() {
             {(user.fullName || user.username).slice(0, 1)}
           </span>
           <div className="min-w-0 flex-1">
-            <p className="truncate text-lg font-black text-white">{user.fullName || user.username}</p>
+            <p className="truncate text-lg font-black text-white">
+              {user.fullName || user.username}
+            </p>
             <p className="text-sm text-[var(--muted)]" dir="ltr">
               @{user.username}
             </p>
             {user.phone && (
-              <a href={`tel:${user.phone}`} className="mt-1 inline-block text-xs text-[var(--muted)] transition hover:text-teal-200" dir="ltr">
+              <a
+                href={`tel:${user.phone}`}
+                className="mt-1 inline-block text-xs text-[var(--muted)] transition hover:text-teal-200"
+                dir="ltr"
+              >
                 {user.phone}
               </a>
             )}
@@ -77,9 +85,14 @@ export default function AccountPage() {
 
         <button
           onClick={async () => {
-            await logout();
-            router.push("/");
-            router.refresh();
+            try {
+              await logout();
+              clearCart();
+              router.push("/");
+              router.refresh();
+            } catch {
+              showToast("خروج انجام نشد؛ دوباره تلاش کنید");
+            }
           }}
           className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl border border-rose-400/30 bg-rose-500/10 py-3.5 text-sm font-black text-rose-300 transition hover:bg-rose-500/20"
         >

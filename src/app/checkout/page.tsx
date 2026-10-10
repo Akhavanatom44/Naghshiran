@@ -5,8 +5,17 @@ import { useRouter } from "next/navigation";
 import { useCart } from "@/lib/cart-context";
 import { useAuth } from "@/lib/auth-context";
 import { faNum, formatToman } from "@/lib/format";
-import { STORE_ADDRESS, STORE_PHONE_DISPLAY, STORE_PHONE_TEL } from "@/lib/format";
-import { MapPinIcon, PhoneIcon, ReceiptIcon, TruckIcon } from "@/components/icons";
+import {
+  STORE_ADDRESS,
+  STORE_PHONE_DISPLAY,
+  STORE_PHONE_TEL,
+} from "@/lib/format";
+import {
+  MapPinIcon,
+  PhoneIcon,
+  ReceiptIcon,
+  TruckIcon,
+} from "@/components/icons";
 
 function fileToDataUrl(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -24,12 +33,18 @@ export default function CheckoutPage() {
 
   const [fullName, setFullName] = useState<string | undefined>(undefined);
   const [phone, setPhone] = useState<string | undefined>(undefined);
-  const [deliveryMethod, setDeliveryMethod] = useState<"ship" | "pickup">("ship");
+  const [deliveryMethod, setDeliveryMethod] = useState<"ship" | "pickup">(
+    "ship",
+  );
   const [address, setAddress] = useState("");
   const [receiptPreview, setReceiptPreview] = useState("");
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const submitLock = useRef(false);
+  const completed = useRef(false);
+  // Stable across a network retry/reload, but not across changed order details.
+  const retryRequest = useRef<{ body: string; key: string } | null>(null);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -38,7 +53,7 @@ export default function CheckoutPage() {
   }, [loading, user, router]);
 
   useEffect(() => {
-    if (!loading && ready && items.length === 0) {
+    if (!completed.current && !loading && ready && items.length === 0) {
       router.replace("/cart");
     }
   }, [loading, ready, items.length, router]);
@@ -46,8 +61,9 @@ export default function CheckoutPage() {
   async function onFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (!file.type.startsWith("image/")) {
-      setError("فقط فایل تصویری مجاز است");
+    setReceiptPreview("");
+    if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
+      setError("فقط تصویر JPEG، PNG یا WebP مجاز است");
       return;
     }
     if (file.size > 5 * 1024 * 1024) {
@@ -55,12 +71,17 @@ export default function CheckoutPage() {
       return;
     }
     setError("");
-    const dataUrl = await fileToDataUrl(file);
-    setReceiptPreview(dataUrl);
+    try {
+      const dataUrl = await fileToDataUrl(file);
+      setReceiptPreview(dataUrl);
+    } catch {
+      setError("خواندن تصویر انجام نشد؛ دوباره انتخاب کنید");
+    }
   }
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (submitLock.current || !user || !ready) return;
     setError("");
 
     if (!receiptPreview) {
@@ -72,30 +93,72 @@ export default function CheckoutPage() {
       return;
     }
 
+    submitLock.current = true;
     setSubmitting(true);
     try {
+      const payload = {
+        items: items.map((i) => ({
+          productId: i.productId,
+          quantity: i.quantity,
+        })),
+        fullName: fullName ?? user.fullName ?? "",
+        phone: phone ?? user.phone ?? "",
+        deliveryMethod,
+        address: deliveryMethod === "ship" ? address : null,
+        receiptImage: receiptPreview,
+        expectedTotal: totalAmount,
+      };
+      const body = JSON.stringify(payload);
+      if (retryRequest.current?.body !== body) {
+        const digest = await crypto.subtle.digest(
+          "SHA-256",
+          new TextEncoder().encode(body),
+        );
+        const fingerprint = Array.from(new Uint8Array(digest), (b) =>
+          b.toString(16).padStart(2, "0"),
+        ).join("");
+        const storageKey = `naghshiran-checkout-${user.id}`;
+        let key = crypto.randomUUID();
+        try {
+          const previous = JSON.parse(
+            window.sessionStorage.getItem(storageKey) ?? "null",
+          );
+          if (previous?.fingerprint === fingerprint) key = previous.key;
+          window.sessionStorage.setItem(
+            storageKey,
+            JSON.stringify({ fingerprint, key }),
+          );
+        } catch {
+          /* In-memory retries still work if browser storage is blocked. */
+        }
+        retryRequest.current = { body, key };
+      }
       const res = await fetch("/api/orders", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          items: items.map((i) => ({ productId: i.productId, quantity: i.quantity })),
-          fullName: fullName ?? user?.fullName ?? "",
-          phone: phone ?? user?.phone ?? "",
-          deliveryMethod,
-          address: deliveryMethod === "ship" ? address : null,
-          receiptImage: receiptPreview,
+          ...payload,
+          requestKey: retryRequest.current.key,
         }),
       });
-      const data = await res.json();
+      const data = await res.json().catch(() => ({}));
       if (!res.ok) {
         setError(data.error ?? "ثبت سفارش با خطا مواجه شد");
+        if (res.status === 401) router.replace("/login?next=%2Fcheckout");
         return;
+      }
+      completed.current = true;
+      try {
+        window.sessionStorage.removeItem(`naghshiran-checkout-${user.id}`);
+      } catch {
+        /* optional storage */
       }
       clearCart();
       router.push(`/orders/${data.orderId}?submitted=1`);
     } catch {
       setError("خطا در برقراری ارتباط با سرور");
     } finally {
+      submitLock.current = false;
       setSubmitting(false);
     }
   }
@@ -114,7 +177,8 @@ export default function CheckoutPage() {
         تکمیل <span className="gradient-text">فرایند خرید</span>
       </h1>
       <p className="mb-8 text-sm text-[var(--muted)]">
-        اطلاعات گیرنده را وارد کنید، فیش واریزی را بارگذاری کنید و دکمهٔ خرید را بزنید.
+        اطلاعات گیرنده را وارد کنید، فیش واریزی را بارگذاری کنید و دکمهٔ خرید را
+        بزنید.
       </p>
 
       <div className="grid gap-6 lg:grid-cols-3">
@@ -136,7 +200,9 @@ export default function CheckoutPage() {
               />
             </div>
             <div>
-              <label className="mb-1.5 block text-xs font-bold text-[var(--muted)]">شماره تلفن</label>
+              <label className="mb-1.5 block text-xs font-bold text-[var(--muted)]">
+                شماره تلفن
+              </label>
               <input
                 required
                 value={phone ?? user.phone ?? ""}
@@ -150,7 +216,9 @@ export default function CheckoutPage() {
           </div>
 
           <div>
-            <label className="mb-2 block text-xs font-bold text-[var(--muted)]">روش تحویل</label>
+            <label className="mb-2 block text-xs font-bold text-[var(--muted)]">
+              روش تحویل
+            </label>
             <div className="grid gap-3 sm:grid-cols-2">
               <button
                 type="button"
@@ -162,7 +230,9 @@ export default function CheckoutPage() {
                 }`}
               >
                 <span className="flex items-center gap-2 font-extrabold text-white">
-                  <TruckIcon className={`h-5 w-5 ${deliveryMethod === "ship" ? "text-amber-400" : "text-[var(--muted)]"}`} />
+                  <TruckIcon
+                    className={`h-5 w-5 ${deliveryMethod === "ship" ? "text-amber-400" : "text-[var(--muted)]"}`}
+                  />
                   ارسال با پیک
                 </span>
                 <span className="mt-1.5 block text-xs leading-5 text-[var(--muted)]">
@@ -179,17 +249,23 @@ export default function CheckoutPage() {
                 }`}
               >
                 <span className="flex items-center gap-2 font-extrabold text-white">
-                  <MapPinIcon className={`h-5 w-5 ${deliveryMethod === "pickup" ? "text-teal-300" : "text-[var(--muted)]"}`} />
+                  <MapPinIcon
+                    className={`h-5 w-5 ${deliveryMethod === "pickup" ? "text-teal-300" : "text-[var(--muted)]"}`}
+                  />
                   تحویل حضوری
                 </span>
-                <span className="mt-1.5 block text-xs leading-5 text-[var(--muted)]">{STORE_ADDRESS}</span>
+                <span className="mt-1.5 block text-xs leading-5 text-[var(--muted)]">
+                  {STORE_ADDRESS}
+                </span>
               </button>
             </div>
           </div>
 
           {deliveryMethod === "ship" && (
             <div>
-              <label className="mb-1.5 block text-xs font-bold text-[var(--muted)]">آدرس دقیق پستی</label>
+              <label className="mb-1.5 block text-xs font-bold text-[var(--muted)]">
+                آدرس دقیق پستی
+              </label>
               <textarea
                 required
                 value={address}
@@ -207,22 +283,31 @@ export default function CheckoutPage() {
               اطلاعات واریز وجه
             </p>
             <p className="mt-2">
-              برای جلوگیری از واریز به شماره‌ی نادرست، پیش از پرداخت اطلاعات حساب را تلفنی از فروشگاه دریافت کنید.
-              مبلغ <span className="font-black text-white">{formatToman(totalAmount)}</span> را پس از هماهنگی واریز
-              کرده و تصویر فیش را بارگذاری کنید.
+              برای جلوگیری از واریز به شماره‌ی نادرست، پیش از پرداخت اطلاعات
+              حساب را تلفنی از فروشگاه دریافت کنید. مبلغ{" "}
+              <span className="font-black text-white">
+                {formatToman(totalAmount)}
+              </span>{" "}
+              را پس از هماهنگی واریز کرده و تصویر فیش را بارگذاری کنید.
             </p>
-            <a href={STORE_PHONE_TEL} className="mt-2 inline-flex items-center gap-2 font-black text-amber-200 underline underline-offset-4" dir="ltr">
+            <a
+              href={STORE_PHONE_TEL}
+              className="mt-2 inline-flex items-center gap-2 font-black text-amber-200 underline underline-offset-4"
+              dir="ltr"
+            >
               <PhoneIcon className="h-4 w-4" />
               {STORE_PHONE_DISPLAY}
             </a>
           </div>
 
           <div>
-            <label className="mb-1.5 block text-xs font-bold text-[var(--muted)]">تصویر فیش واریزی</label>
+            <label className="mb-1.5 block text-xs font-bold text-[var(--muted)]">
+              تصویر فیش واریزی
+            </label>
             <input
               ref={fileInputRef}
               type="file"
-              accept="image/*"
+              accept="image/jpeg,image/png,image/webp"
               onChange={onFileChange}
               className="block w-full cursor-pointer text-sm text-[var(--muted)] file:ml-4 file:cursor-pointer file:rounded-xl file:border-0 file:bg-gradient-to-l file:from-orange-600 file:to-amber-400 file:px-4 file:py-2.5 file:text-sm file:font-black file:text-[#1c0e00]"
             />
@@ -244,16 +329,25 @@ export default function CheckoutPage() {
             </p>
           )}
 
-          <button type="submit" disabled={submitting} className="btn-primary w-full rounded-xl py-4 text-sm">
+          <button
+            type="submit"
+            disabled={submitting}
+            className="btn-primary w-full rounded-xl py-4 text-sm"
+          >
             {submitting ? "در حال ثبت سفارش..." : "ثبت نهایی خرید و ارسال فیش"}
           </button>
         </form>
 
         <div className="glass-card fade-in-up h-fit rounded-3xl p-5 sm:p-6">
-          <h2 className="mb-4 text-base font-black text-white">خلاصه سبد خرید</h2>
+          <h2 className="mb-4 text-base font-black text-white">
+            خلاصه سبد خرید
+          </h2>
           <div className="space-y-3">
             {items.map((item) => (
-              <div key={item.productId} className="flex items-center justify-between gap-2 text-sm">
+              <div
+                key={item.productId}
+                className="flex items-center justify-between gap-2 text-sm"
+              >
                 <span className="truncate text-[var(--muted)]">
                   {item.name} × {faNum(item.quantity)}
                 </span>
@@ -265,11 +359,14 @@ export default function CheckoutPage() {
           </div>
           <div className="mt-4 flex items-center justify-between border-t border-[rgba(148,184,220,0.14)] pt-3">
             <span className="text-sm font-black text-white">جمع کل</span>
-            <span className="text-base font-black text-amber-300">{formatToman(totalAmount)}</span>
+            <span className="text-base font-black text-amber-300">
+              {formatToman(totalAmount)}
+            </span>
           </div>
           <p className="mt-4 flex items-center gap-2 rounded-xl bg-white/5 p-3 text-[11px] leading-5 text-[var(--muted)]">
             <PhoneIcon className="h-4 w-4 shrink-0 text-teal-300" />
-            پس از ثبت، فیش شما برای ادمین فروشگاه ارسال و پس از تأیید، نتیجه همین‌جا اعلام می‌شود.
+            پس از ثبت، فیش شما برای ادمین فروشگاه ارسال و پس از تأیید، نتیجه
+            همین‌جا اعلام می‌شود.
           </p>
         </div>
       </div>

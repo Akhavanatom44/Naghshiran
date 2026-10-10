@@ -1,3 +1,4 @@
+import { presentProduct } from "@/lib/product-pricing";
 import { getDb } from "@/db";
 import { products } from "@/db/schema";
 import { desc, eq } from "drizzle-orm";
@@ -23,9 +24,9 @@ export default async function HomePage() {
 
     if (rows.length === 0) {
       databaseIsEmpty = true;
-      items = CATALOG_PRODUCTS.map((product) => ({ ...product, canPurchase: false }));
+      items = CATALOG_PRODUCTS.map((product) => presentProduct({ ...product, canPurchase: false }));
     } else {
-      items = rows.map((product) => ({
+      items = rows.map((product) => presentProduct({
         id: product.id,
         code: product.code,
         name: product.name,
@@ -39,7 +40,7 @@ export default async function HomePage() {
   } catch (error) {
     databaseAvailable = false;
     console.warn("[home] D1 database unavailable; showing the built-in catalog", error);
-    items = CATALOG_PRODUCTS.map((product) => ({ ...product, canPurchase: false }));
+    items = CATALOG_PRODUCTS.map((product) => presentProduct({ ...product, canPurchase: false }));
   }
 
   return (
