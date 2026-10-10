@@ -6,6 +6,7 @@ import { useCart } from "@/lib/cart-context";
 import { useAuth } from "@/lib/auth-context";
 import { formatToman, faNum } from "@/lib/format";
 import { savePendingCartProduct } from "@/lib/cart-storage";
+import ProductImage from "@/components/ProductImage";
 import { CartIcon, MinusIcon, PlusIcon, TrashIcon } from "@/components/icons";
 
 export default function CartPage() {
@@ -33,7 +34,7 @@ export default function CartPage() {
         imageUrl: item.imageUrl,
         stock: item.stock,
       });
-      router.push("/login?next=%2Fcart");
+      router.push(`/login?next=%2Fcart&add=${item.code}`);
       return;
     }
     updateQuantity(item.productId, item.quantity + 1);
@@ -78,16 +79,14 @@ export default function CartPage() {
                 className="glass-card fade-in-up flex items-center gap-3 rounded-2xl p-3 sm:gap-4 sm:p-4"
               >
                 <div className="product-stage relative h-20 w-20 shrink-0 overflow-hidden rounded-xl sm:h-24 sm:w-24">
-                  {item.imageUrl ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={item.imageUrl}
-                      alt={item.name}
-                      className="mix-blend-multiply h-full w-full object-contain p-1.5"
-                    />
-                  ) : (
-                    <div className="grid h-full w-full place-items-center text-2xl">🛍️</div>
-                  )}
+                  <ProductImage
+                    code={item.code}
+                    name={item.name}
+                    imageUrl={item.imageUrl}
+                    width={96}
+                    height={96}
+                    className="mix-blend-multiply h-full w-full object-contain p-1.5"
+                  />
                 </div>
 
                 <div className="min-w-0 flex-1">

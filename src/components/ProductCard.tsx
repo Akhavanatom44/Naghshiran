@@ -5,6 +5,7 @@ import { useCart } from "@/lib/cart-context";
 import { useAuth } from "@/lib/auth-context";
 import { faNum } from "@/lib/format";
 import { savePendingCartProduct } from "@/lib/cart-storage";
+import ProductImage from "@/components/ProductImage";
 import { MinusIcon, PlusIcon } from "@/components/icons";
 
 export type ProductForCard = {
@@ -52,7 +53,7 @@ export default function ProductCard({
     if (authLoading || !cartReady || outOfStock || atStockLimit) return;
 
     if (!user) {
-      const saved = savePendingCartProduct({
+      savePendingCartProduct({
         productId: product.id,
         code: product.code,
         name: product.name,
@@ -60,11 +61,9 @@ export default function ProductCard({
         imageUrl: product.imageUrl,
         stock: product.stock,
       });
-      if (!saved)
-        showToast(
-          "مرورگر اجازه‌ی ذخیره‌ی سبد را نداد؛ پس از ورود دوباره تلاش کنید",
-        );
-      router.push("/login?next=%2F");
+      // The query string is a fallback if sessionStorage is blocked or cleared.
+      // The post-auth handler re-fetches price and stock from the server.
+      router.push(`/login?next=%2F&add=${product.code}`);
       return;
     }
 
@@ -91,27 +90,13 @@ export default function ProductCard({
     >
       <div className="product-stage m-2 rounded-[1rem] sm:m-2.5">
         <span className="ring-anim rounded-[1rem]" />
-        {product.imageUrl ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={product.imageUrl}
-            alt={`تصویر ${product.name}`}
-            loading={index < 8 ? "eager" : "lazy"}
-            decoding="async"
-            width={640}
-            height={640}
-            onError={(event) => {
-              const fallback = `/images/catalog/${product.code}.svg`;
-              if (event.currentTarget.getAttribute("src") !== fallback)
-                event.currentTarget.src = fallback;
-            }}
-            className="mix-blend-multiply h-full w-full rounded-[1rem] object-contain p-2.5 sm:p-3.5"
-          />
-        ) : (
-          <div className="grid h-full w-full place-items-center text-5xl">
-            🛍️
-          </div>
-        )}
+        <ProductImage
+          code={product.code}
+          name={product.name}
+          imageUrl={product.imageUrl}
+          loading={index < 8 ? "eager" : "lazy"}
+          className="mix-blend-multiply h-full w-full rounded-[1rem] object-contain p-2.5 sm:p-3.5"
+        />
         <span className="stage-inner-shadow rounded-[1rem]" />
         <span className="stage-shine rounded-[1rem]" />
 

@@ -43,7 +43,12 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <html lang="fa" dir="rtl" className={vazirmatn.variable}>
+    <html
+      lang="fa"
+      dir="rtl"
+      className={vazirmatn.variable}
+      data-scroll-behavior="smooth"
+    >
       <body className="relative min-h-dvh bg-[#0a1322] font-[family-name:var(--font-vazirmatn)] text-white antialiased">
         <GlowBackground />
         <AuthProvider>

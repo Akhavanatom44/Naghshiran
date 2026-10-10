@@ -3,7 +3,7 @@ import catalogImages from "./catalog-images.json";
 
 const IMAGE_BY_CODE: Record<string, string> = catalogImages;
 
-/** Photo (JPG) when generated, otherwise the SVG illustration. */
+/** Optimized product photo when available, otherwise the local catalog illustration. */
 export function catalogImageUrl(code: number): string {
   return IMAGE_BY_CODE[String(code)] ?? `/images/catalog/${code}.svg`;
 }

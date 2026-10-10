@@ -13,9 +13,14 @@ type AuthMode = "login" | "register";
 type LoginFormProps = {
   initialMode: AuthMode;
   nextPath: string;
+  initialProductCode?: number | null;
 };
 
-export default function LoginForm({ initialMode, nextPath }: LoginFormProps) {
+export default function LoginForm({
+  initialMode,
+  nextPath,
+  initialProductCode = null,
+}: LoginFormProps) {
   const router = useRouter();
   const { user, loading: authLoading, refresh } = useAuth();
   const { addItem, showToast, ready: cartReady } = useCart();
@@ -33,7 +38,7 @@ export default function LoginForm({ initialMode, nextPath }: LoginFormProps) {
   async function finishLogin() {
     if (completing.current) return;
     completing.current = true;
-    const code = pendingProductCode();
+    const code = initialProductCode ?? pendingProductCode();
     if (code !== null) {
       try {
         const response = await fetch("/api/products", { cache: "no-store" });

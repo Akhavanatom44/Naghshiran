@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { readFileSync, existsSync } from "node:fs";
+import sharp from "sharp";
 import {
   addCartItem,
   setCartQuantity,
@@ -135,14 +136,20 @@ test("retry fingerprint ignores request key, not changed details", async () => {
     await checkoutHash({ ...valid, fullName: "نام جدید" }),
   );
 });
-test("every catalog code resolves to a real local image", () => {
+test("every catalog code resolves to a real, decodable local image", async () => {
   const images = JSON.parse(
     readFileSync("src/data/catalog-images.json", "utf8"),
   );
   const catalog = JSON.parse(readFileSync("src/data/catalog.json", "utf8"));
   assert.equal(catalog.length, 50);
-  for (const p of catalog)
-    assert.ok(existsSync(`public${images[p.code]}`), `Missing ${p.code}`);
+  for (const p of catalog) {
+    const imagePath = `public${images[p.code]}`;
+    assert.ok(existsSync(imagePath), `Missing ${p.code}`);
+    const metadata = await sharp(imagePath).metadata();
+    assert.equal(metadata.format, "webp", `Unexpected format for ${p.code}`);
+    assert.ok(metadata.width && metadata.height, `Unreadable image ${p.code}`);
+    assert.equal(metadata.width, metadata.height, `Image is not square: ${p.code}`);
+  }
 });
 test("pending guest click is tab scoped, expires and tolerates blocked storage", () => {
   const values = new Map<string, string>();
