@@ -64,7 +64,15 @@ export function reconcileCart(
     if (!current || current.canPurchase === false || !isCartProduct(current))
       return [];
     return [
-      { ...current, quantity: Math.min(item.quantity, current.stock, 99) },
+      {
+        productId: current.productId,
+        code: current.code,
+        name: current.name,
+        price: current.price,
+        imageUrl: current.imageUrl,
+        stock: current.stock,
+        quantity: Math.min(item.quantity, current.stock, 99),
+      },
     ];
   });
 }
