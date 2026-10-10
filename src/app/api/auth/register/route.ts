@@ -44,7 +44,11 @@ const schema = z.object({
       }
       return normalized;
     }),
-  fullName: z.string().trim().max(128).optional(),
+  fullName: z
+    .string()
+    .trim()
+    .min(2, "نام و نام خانوادگی را وارد کنید")
+    .max(128),
 });
 
 export async function POST(req: Request) {
@@ -67,6 +71,13 @@ export async function POST(req: Request) {
   }
 
   // Fail before creating an account if cookies cannot be signed.
+  if (parsed.data.username === "admin") {
+    return Response.json(
+      { error: "این نام کاربری قابل ثبت نیست" },
+      { status: 409 },
+    );
+  }
+
   try {
     await ensureSessionSecret();
   } catch (error) {

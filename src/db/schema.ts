@@ -10,6 +10,7 @@ import { integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
 export const users = sqliteTable("users", {
   id: integer("id").primaryKey({ autoIncrement: true }),
   username: text("username", { length: 64 }).notNull().unique(),
+  sessionVersion: integer("session_version").notNull().default(0),
   passwordHash: text("password_hash").notNull(),
   fullName: text("full_name", { length: 128 }),
   phone: text("phone", { length: 32 }),
@@ -28,6 +29,7 @@ export const products = sqliteTable("products", {
   // Prices are stored in Toman. SQLite INTEGER is 64-bit, which is required
   // for the supplied Leica prices.
   price: integer("price").notNull(),
+  discountPercent: integer("discount_percent"),
   imageUrl: text("image_url").notNull().default(""),
   isActive: integer("is_active", { mode: "boolean" }).notNull().default(true),
   stock: integer("stock").notNull().default(0),
@@ -84,4 +86,26 @@ export const orderSubmissions = sqliteTable("order_submissions", {
     .notNull()
     .references(() => orders.id, { onDelete: "cascade" }),
   requestHash: text("request_hash").notNull(),
+});
+
+export const messages = sqliteTable("messages", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  recipientId: integer("recipient_id")
+    .notNull()
+    .references(() => users.id),
+  senderId: integer("sender_id")
+    .notNull()
+    .references(() => users.id),
+  body: text("body").notNull(),
+  readAt: integer("read_at", { mode: "timestamp_ms" }),
+  createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull(),
+});
+export const productImages = sqliteTable("product_images", {
+  id: text("id").primaryKey().notNull(),
+  data: text("data").notNull(),
+});
+export const loginAttempts = sqliteTable("login_attempts", {
+  key: text("key").primaryKey().notNull(),
+  attempts: integer("attempts").notNull(),
+  expiresAt: integer("expires_at").notNull(),
 });

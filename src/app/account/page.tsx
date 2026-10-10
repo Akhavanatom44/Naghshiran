@@ -95,6 +95,8 @@ export default function AccountPage() {
           </a>
         </div>
 
+        <Link href="/messages" className="btn-outline mt-3 flex justify-center rounded-xl py-3.5 text-sm">پیام‌های فروشنده</Link>
+
         <button
           disabled={loggingOut}
           onClick={async () => {

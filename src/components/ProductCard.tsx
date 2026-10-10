@@ -41,7 +41,7 @@ export default function ProductCard({
   const qty = getQuantity(product.id);
   const outOfStock = product.stock <= 0;
   const canPurchase = product.canPurchase !== false;
-  const atStockLimit = qty >= product.stock;
+  const atStockLimit = qty >= Math.min(product.stock, 99);
 
   const addOne = () => {
     if (!canPurchase) {
@@ -115,49 +115,6 @@ export default function ProductCard({
             ناموجود
           </span>
         )}
-
-        <div className="absolute bottom-2.5 left-2.5 z-10">
-          {outOfStock ? null : qty === 0 ? (
-            <button
-              onClick={addOne}
-              disabled={!canPurchase || authLoading || !cartReady}
-              aria-label={`افزودن ${product.name} به سبد خرید`}
-              title={
-                !canPurchase
-                  ? "پایگاه داده‌ی فروشگاه هنوز آماده نیست"
-                  : !user
-                    ? "برای افزودن، ابتدا ثبت‌نام یا وارد شوید"
-                    : "افزودن به سبد خرید"
-              }
-              className="add-btn disabled:cursor-wait disabled:opacity-70"
-            >
-              <PlusIcon className="h-5 w-5" />
-            </button>
-          ) : (
-            <div className="stepper-pill">
-              <button
-                onClick={addOne}
-                disabled={
-                  !canPurchase || authLoading || !cartReady || atStockLimit
-                }
-                aria-label="افزودن یک عدد"
-                className="stepper-btn stepper-plus disabled:cursor-not-allowed disabled:opacity-40"
-              >
-                <PlusIcon className="h-4 w-4" />
-              </button>
-              <span className="min-w-7 text-center text-base font-black text-white">
-                {faNum(qty)}
-              </span>
-              <button
-                onClick={decOne}
-                aria-label="کاهش یک عدد"
-                className="stepper-btn stepper-minus"
-              >
-                <MinusIcon className="h-4 w-4" />
-              </button>
-            </div>
-          )}
-        </div>
       </div>
 
       <div className="space-y-1.5 px-3.5 pb-4 pt-1 sm:px-4">
@@ -172,30 +129,74 @@ export default function ProductCard({
         <p className="line-clamp-3 min-h-[2.2rem] text-xs leading-5 text-[var(--muted)]">
           {product.description || "بدون توضیحات"}
         </p>
-        <div className="flex items-end justify-between gap-2 pt-1">
+        <div className="flex min-h-14 items-end justify-between gap-2 pb-2 pt-2">
           <div className="min-w-0">
             {product.originalPrice && (
               <del
                 className="block text-xs text-[var(--muted)]"
                 aria-label="قیمت قبل از تخفیف"
               >
-                {product.originalPrice.toLocaleString("fa-IR")}
+                {faNum(product.originalPrice)}
               </del>
             )}
-            <span className="block whitespace-nowrap text-[15px] font-black text-amber-300 sm:text-lg">
-              {product.price.toLocaleString("fa-IR")}
-            </span>
-            <span className="text-[10px] font-bold text-[var(--muted)]">
-              تومان
+            <span className="whitespace-nowrap text-[15px] font-black text-amber-300 sm:text-lg">
+              {faNum(product.price)}
             </span>
           </div>
-          {!outOfStock && (
-            <span className="mb-0.5 flex shrink-0 items-center gap-1 text-[10px] font-bold text-emerald-300">
-              <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
-              موجود
-            </span>
-          )}
+          <span className="pb-1 text-xs font-bold text-[var(--muted)]">
+            تومان
+          </span>
         </div>
+        {qty === 0 ? (
+          <button
+            onClick={addOne}
+            disabled={outOfStock || !canPurchase || authLoading || !cartReady}
+            aria-label={`خرید محصول ${product.name}`}
+            title={
+              !user
+                ? "برای خرید، ابتدا وارد شوید یا ثبت‌نام کنید"
+                : "افزودن به سبد خرید"
+            }
+            className="purchase-button w-full rounded-xl py-3 text-sm font-black disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            {outOfStock ? "ناموجود" : "خرید محصول"}
+          </button>
+        ) : (
+          <div
+            className="flex w-full items-center justify-between rounded-xl border border-emerald-400/35 bg-emerald-400/10 p-1"
+            role="group"
+            aria-label={`تعداد ${product.name}`}
+          >
+            <button
+              onClick={addOne}
+              disabled={
+                !canPurchase ||
+                authLoading ||
+                !cartReady ||
+                atStockLimit ||
+                outOfStock
+              }
+              aria-label={`افزودن یک عدد ${product.name}`}
+              className="grid h-10 w-10 place-items-center rounded-lg bg-emerald-400/20 text-emerald-200 disabled:opacity-30"
+            >
+              <PlusIcon className="h-5 w-5" />
+            </button>
+            <span
+              aria-live="polite"
+              className="text-base font-black text-emerald-100"
+            >
+              {faNum(qty)}
+            </span>
+            <button
+              onClick={decOne}
+              disabled={!cartReady}
+              aria-label={`کاهش یک عدد ${product.name}`}
+              className="grid h-10 w-10 place-items-center rounded-lg bg-white/5 text-slate-200"
+            >
+              <MinusIcon className="h-5 w-5" />
+            </button>
+          </div>
+        )}
       </div>
     </article>
   );

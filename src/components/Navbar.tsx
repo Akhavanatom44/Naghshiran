@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useCart } from "@/lib/cart-context";
 import { useAuth } from "@/lib/auth-context";
+import MessageLink from "@/components/MessageLink";
 import Logo from "@/components/Logo";
 import { CartIcon, PhoneIcon, UserIcon } from "@/components/icons";
 import { STORE_PHONE_DISPLAY, STORE_PHONE_TEL } from "@/lib/format";
@@ -49,14 +50,6 @@ export default function Navbar() {
               {link.label}
             </Link>
           ))}
-          {user?.isAdmin && (
-            <Link
-              href="/admin"
-              className="mr-2 rounded-xl border border-amber-400/30 bg-amber-400/10 px-3.5 py-2 text-sm font-bold text-amber-200 transition hover:bg-amber-400/20"
-            >
-              پنل مدیریت
-            </Link>
-          )}
           <a
             href={STORE_PHONE_TEL}
             className="mr-2 hidden items-center gap-2 rounded-xl border border-[rgba(148,184,220,0.16)] bg-white/5 px-3.5 py-2 text-sm font-bold text-white transition hover:border-amber-400/50 hover:text-amber-300 lg:flex"
@@ -68,6 +61,16 @@ export default function Navbar() {
         </nav>
 
         <div className="flex items-center gap-2">
+          {user?.isAdmin && (
+            <Link
+              href="/admin"
+              className="rounded-xl border border-amber-400/30 bg-amber-400/10 px-2 py-2 text-xs font-bold text-amber-200"
+            >
+              پنل فروشگاه
+            </Link>
+          )}
+          {user && <MessageLink />}
+
           <Link
             href="/cart"
             aria-label="سبد خرید"

@@ -1,3 +1,4 @@
+import { SELLER_SCHEMA } from "./seller-schema";
 import { CHECKOUT_SCHEMA } from "./checkout-schema";
 import { getCloudflareContext } from "@opennextjs/cloudflare";
 import { drizzle } from "drizzle-orm/d1";
@@ -54,12 +55,37 @@ const readyByDatabase = new WeakMap<D1Database, Promise<void>>();
 async function ensureOptionalColumns(database: D1Database) {
   const table = await database.prepare("PRAGMA table_info(orders)").all();
   const columns = new Set(
-    (table.results ?? []).map((row) => String((row as { name?: unknown }).name)),
+    (table.results ?? []).map((row) =>
+      String((row as { name?: unknown }).name),
+    ),
   );
   if (!columns.has("customer_note")) {
     await database
       .prepare("ALTER TABLE orders ADD COLUMN customer_note TEXT")
       .run();
+  }
+  for (const [tableName, column, definition] of [
+    ["products", "discount_percent", "INTEGER"],
+    ["users", "session_version", "INTEGER NOT NULL DEFAULT 0"],
+  ]) {
+    const info = await database
+      .prepare(`PRAGMA table_info(${tableName})`)
+      .all<{ name: string }>();
+    if (!info.results.some((row) => row.name === column)) {
+      try {
+        await database
+          .prepare(
+            `ALTER TABLE ${tableName} ADD COLUMN ${column} ${definition}`,
+          )
+          .run();
+      } catch (error) {
+        // Another isolate may have completed this additive migration first.
+        const current = await database
+          .prepare(`PRAGMA table_info(${tableName})`)
+          .all<{ name: string }>();
+        if (!current.results.some((row) => row.name === column)) throw error;
+      }
+    }
   }
 }
 
@@ -160,38 +186,23 @@ async function ensureSchema(database: D1Database) {
   // CREATE ... IF NOT EXISTS is safe to run repeatedly and also works on a
   // database that was created by `npm run db:push`.
   await database.batch(
-    [...SCHEMA_STATEMENTS, ...CHECKOUT_SCHEMA].map((statement) =>
-      database.prepare(statement),
+    [...SCHEMA_STATEMENTS, ...CHECKOUT_SCHEMA, ...SELLER_SCHEMA].map(
+      (statement) => database.prepare(statement),
     ),
   );
   await ensureOptionalColumns(database);
 
-  // Keep the requested manager account available after a fresh deployment.
-  // The password is stored only as a bcrypt hash; the login UI displays the
-  // one-time setup credential and production operators should rotate it.
+  // Never promote an existing customer account merely because of its username.
   await database
     .prepare(
-      "INSERT INTO users (username, password_hash, full_name, phone, is_admin) VALUES (?, ?, ?, ?, 1) ON CONFLICT(username) DO NOTHING",
+      "INSERT INTO users (username, password_hash, full_name, phone, is_admin, session_version) VALUES (?, ?, ?, ?, 1, 1) ON CONFLICT(username) DO NOTHING",
     )
-    .bind(
-      ADMIN_USERNAME,
-      ADMIN_PASSWORD_HASH,
-      "مدیر فروشگاه",
-      "09131147897",
-    )
+    .bind(ADMIN_USERNAME, ADMIN_PASSWORD_HASH, "مدیر فروشگاه", "09131147897")
     .run();
-  // If an older customer had already claimed the reserved username, promote it
-  // once so the requested credentials work; afterwards a manager can rotate the
-  // password without this bootstrap overwriting it on every request.
+  // Invalidate manager sessions issued while the old public login exposed credentials.
   await database
     .prepare(
-      "UPDATE users SET password_hash=?, is_admin=1, full_name=COALESCE(full_name, ?), phone=COALESCE(phone, ?) WHERE username=? AND is_admin=0",
-    )
-    .bind(
-      ADMIN_PASSWORD_HASH,
-      "مدیر فروشگاه",
-      "09131147897",
-      ADMIN_USERNAME,
+      "UPDATE users SET session_version=1 WHERE is_admin=1 AND session_version=0",
     )
     .run();
 

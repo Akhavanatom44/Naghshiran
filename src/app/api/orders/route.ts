@@ -166,12 +166,12 @@ export async function POST(req: Request) {
           { status: 409 },
         );
       }
-      totalAmount += sellingPrice(product.code, product.price) * item.quantity;
+      totalAmount += sellingPrice(product.code, product.price, product.discountPercent) * item.quantity;
       itemsForInsert.push({
         productId: product.id,
         productName: product.name,
         productCode: product.code,
-        unitPrice: sellingPrice(product.code, product.price),
+        unitPrice: sellingPrice(product.code, product.price, product.discountPercent),
         quantity: item.quantity,
       });
     }
@@ -212,7 +212,7 @@ export async function POST(req: Request) {
           const basePrice = productMap.get(item.productId)!.price;
           return rawDb
             .prepare(
-              "INSERT INTO order_items (order_id, product_id, product_name, product_code, unit_price, quantity) VALUES ((SELECT order_id FROM order_submissions WHERE request_key=? AND user_id=?), ?, (SELECT name FROM products WHERE id=?), (SELECT code FROM products WHERE id=?), COALESCE((SELECT CASE WHEN price=? THEN ? ELSE -1 END FROM products WHERE id=?), -1), ?)",
+              "INSERT INTO order_items (order_id, product_id, product_name, product_code, unit_price, quantity) VALUES ((SELECT order_id FROM order_submissions WHERE request_key=? AND user_id=?), ?, (SELECT name FROM products WHERE id=?), (SELECT code FROM products WHERE id=?), COALESCE((SELECT CASE WHEN price=? AND discount_percent IS ? THEN ? ELSE -1 END FROM products WHERE id=?), -1), ?)",
             )
             .bind(
               data.requestKey,
@@ -221,6 +221,7 @@ export async function POST(req: Request) {
               item.productId,
               item.productId,
               basePrice,
+              productMap.get(item.productId)!.discountPercent,
               item.unitPrice,
               item.productId,
               item.quantity,

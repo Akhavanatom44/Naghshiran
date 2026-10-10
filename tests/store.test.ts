@@ -175,7 +175,11 @@ test("every catalog code resolves to a real, decodable local image", async () =>
     const metadata = await sharp(imagePath).metadata();
     assert.equal(metadata.format, "webp", `Unexpected format for ${p.code}`);
     assert.ok(metadata.width && metadata.height, `Unreadable image ${p.code}`);
-    assert.equal(metadata.width, metadata.height, `Image is not square: ${p.code}`);
+    assert.equal(
+      metadata.width,
+      metadata.height,
+      `Image is not square: ${p.code}`,
+    );
   }
 });
 test("pending guest click is tab scoped, expires and tolerates blocked storage", () => {
@@ -209,9 +213,10 @@ test("pending guest click is tab scoped, expires and tolerates blocked storage",
   assert.equal(pendingProductCode(), null);
 });
 
-
 test("catalog introduction remains first even without offers or products", () => {
-  const markup = renderToStaticMarkup(createElement(ProductCatalog, { products: [] }));
+  const markup = renderToStaticMarkup(
+    createElement(ProductCatalog, { products: [] }),
+  );
   const introIndex = markup.indexOf('id="catalog-intro"');
   const shopIndex = markup.indexOf('id="shop"');
   assert.ok(introIndex >= 0 && introIndex < shopIndex);
@@ -223,11 +228,13 @@ test("catalog introduction remains first even without offers or products", () =>
 });
 
 test("missing image URL starts with the optimized catalog photo", () => {
-  const markup = renderToStaticMarkup(createElement(ProductImage, {
-    code: 223,
-    name: "باتری",
-    imageUrl: "  ",
-  }));
+  const markup = renderToStaticMarkup(
+    createElement(ProductImage, {
+      code: 223,
+      name: "باتری",
+      imageUrl: "  ",
+    }),
+  );
   assert.ok(markup.includes('src="/images/catalog/223.webp"'));
 });
 
@@ -237,7 +244,9 @@ test("new studio images and every SVG fallback are decodable", async () => {
     const photo = await sharp(`public/images/catalog/${code}.jpg`).metadata();
     assert.equal(photo.format, "jpeg");
     assert.ok(photo.width && photo.height);
-    const optimized = await sharp(`public/images/catalog/${code}.webp`).metadata();
+    const optimized = await sharp(
+      `public/images/catalog/${code}.webp`,
+    ).metadata();
     assert.equal(optimized.width, 640);
     assert.equal(optimized.height, 640);
   }
@@ -248,7 +257,9 @@ test("new studio images and every SVG fallback are decodable", async () => {
       existsSync(`public/images/catalog/${code}.jpg`),
       `Missing photo source for ${code}`,
     );
-    const fallback = await sharp(`public/images/catalog/${code}.svg`).metadata();
+    const fallback = await sharp(
+      `public/images/catalog/${code}.svg`,
+    ).metadata();
     assert.equal(fallback.format, "svg");
     assert.ok(fallback.width && fallback.height);
   }
@@ -264,7 +275,11 @@ test("session secret resolves without configuration (login must not 503)", async
       fallback instanceof Uint8Array && fallback.length > 0,
       "unconfigured secret must still resolve",
     );
-    assert.deepEqual(await resolveSessionSecret(), fallback, "secret is stable");
+    assert.deepEqual(
+      await resolveSessionSecret(),
+      fallback,
+      "secret is stable",
+    );
 
     process.env.SESSION_SECRET = "configured-secret-with-more-than-32-chars!";
     assert.deepEqual(
@@ -295,4 +310,45 @@ test("receipt limit stays under D1's 2 MB per-row cap", () => {
     }).success,
     true,
   );
+});
+
+test("merchant discounts override legacy offers including explicit removal", () => {
+  assert.equal(sellingPrice(212, 1000, 25), 750);
+  assert.equal(sellingPrice(212, 1000, 0), 1000);
+  assert.equal(sellingPrice(999999, 999, 17), 829);
+  const product = presentProduct({
+    code: 212,
+    price: 1000,
+    imageUrl: "/api/product-images/custom",
+    discountPercent: 0,
+  });
+  assert.equal(product.price, 1000);
+  assert.equal(product.originalPrice, undefined);
+  assert.equal(product.imageUrl, "/api/product-images/custom");
+});
+
+test("both pickup and courier require recipient identity and phone", () => {
+  for (const deliveryMethod of ["pickup", "ship"] as const) {
+    const data = {
+      ...input,
+      deliveryMethod,
+      address: "اصفهان، خیابان استانداری",
+    };
+    assert.equal(
+      checkoutSchema.safeParse({ ...data, phone: "" }).success,
+      false,
+    );
+    assert.equal(
+      checkoutSchema.safeParse({ ...data, fullName: "" }).success,
+      false,
+    );
+    assert.equal(
+      checkoutSchema.safeParse({ ...data, phone: "۱۲۳۴" }).success,
+      false,
+    );
+    assert.equal(
+      checkoutSchema.safeParse({ ...data, customerNote: null }).success,
+      true,
+    );
+  }
 });

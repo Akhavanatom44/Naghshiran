@@ -107,8 +107,8 @@ export async function verifyPassword(password: string, hash: string) {
   return bcrypt.compare(password, hash);
 }
 
-export async function createSessionToken(userId: number) {
-  return new SignJWT({ userId })
+export async function createSessionToken(userId: number, sessionVersion = 0) {
+  return new SignJWT({ userId, sessionVersion })
     .setProtectedHeader({ alg: "HS256" })
     .setIssuedAt()
     .setExpirationTime("30d")
@@ -116,7 +116,13 @@ export async function createSessionToken(userId: number) {
 }
 
 export async function setSessionCookie(userId: number) {
-  const token = await createSessionToken(userId);
+  const db = await getDb();
+  const [account] = await db
+    .select({ version: users.sessionVersion })
+    .from(users)
+    .where(eq(users.id, userId));
+  if (!account) throw new Error("Account unavailable");
+  const token = await createSessionToken(userId, account.version);
   const cookieStore = await cookies();
   cookieStore.set(SESSION_COOKIE, token, {
     httpOnly: true,
@@ -139,7 +145,14 @@ export async function getSessionUserId(): Promise<number | null> {
   try {
     const { payload } = await jwtVerify(token, await resolveSessionSecret());
     const id = payload.userId;
-    return typeof id === "number" && Number.isSafeInteger(id) && id > 0
+    if (typeof id !== "number" || !Number.isSafeInteger(id) || id <= 0)
+      return null;
+    const db = await getDb();
+    const [account] = await db
+      .select({ version: users.sessionVersion })
+      .from(users)
+      .where(eq(users.id, id));
+    return account && account.version === (payload.sessionVersion ?? 0)
       ? id
       : null;
   } catch {

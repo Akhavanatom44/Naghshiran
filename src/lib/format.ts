@@ -9,6 +9,8 @@ export function formatToman(amount: number): string {
 export const STORE_NAME = "نقشیران";
 export const STORE_OWNER = "منصور اخوان حریری";
 export const STORE_ADDRESS =
-  "اصفهان، خیابان استانداری، نبش خیابان فرشادی، فروشگاه نقشیران";
+  "اصفهان، خیابان استانداری، نبش خیابان فرشادی، فروشگاه مهندسی نقشیران";
 export const STORE_PHONE_DISPLAY = "۰۹۱۳ ۱۱۴ ۷۸۹۷";
 export const STORE_PHONE_TEL = "tel:+989131147897";
+
+export const STORE_CARD_NUMBER = "6037997327623303";

@@ -1,5 +1,7 @@
 "use client";
 
+import SellerMessages from "./SellerMessages";
+
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
@@ -336,6 +338,8 @@ export default function AdminDashboard() {
                   <p className="mt-1 leading-6 text-[var(--muted)]">{detail.deliveryMethod === "pickup" ? STORE_ADDRESS : detail.address || "آدرس ثبت نشده"}</p>
                 </div>
               </div>
+
+              {detail.username && <SellerMessages key={detail.id} recipient={detail.username} compact />}
 
               {detail.customerNote && (
                 <div className="mt-4 rounded-2xl border border-teal-400/20 bg-teal-400/5 p-4 text-sm leading-7">

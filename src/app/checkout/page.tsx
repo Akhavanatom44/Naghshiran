@@ -1,5 +1,7 @@
 "use client";
 
+import PaymentCard from "@/components/PaymentCard";
+import { normalizeIranianMobile } from "@/lib/phone";
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useCart } from "@/lib/cart-context";
@@ -91,6 +93,13 @@ export default function CheckoutPage() {
     if (submitLock.current || !user || !ready) return;
     setError("");
 
+    if (
+      !(fullName ?? user.fullName ?? "").trim() ||
+      !normalizeIranianMobile(phone ?? user.phone ?? "")
+    ) {
+      setError("نام گیرنده و شماره موبایل معتبر را وارد و بررسی کنید");
+      return;
+    }
     if (!receiptPreview) {
       setError("لطفاً تصویر فیش واریزی را ارسال کنید");
       return;
@@ -194,35 +203,6 @@ export default function CheckoutPage() {
           onSubmit={onSubmit}
           className="glass-card fade-in-up space-y-5 rounded-3xl p-5 sm:p-6 lg:col-span-2"
         >
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div>
-              <label className="mb-1.5 block text-xs font-bold text-[var(--muted)]">
-                نام و نام خانوادگی گیرنده
-              </label>
-              <input
-                required
-                value={fullName ?? user.fullName ?? ""}
-                onChange={(e) => setFullName(e.target.value)}
-                className="input-field"
-                autoComplete="name"
-              />
-            </div>
-            <div>
-              <label className="mb-1.5 block text-xs font-bold text-[var(--muted)]">
-                شماره تلفن
-              </label>
-              <input
-                required
-                value={phone ?? user.phone ?? ""}
-                onChange={(e) => setPhone(e.target.value)}
-                dir="ltr"
-                inputMode="tel"
-                className="input-field text-left"
-                autoComplete="tel"
-              />
-            </div>
-          </div>
-
           <div>
             <label className="mb-2 block text-xs font-bold text-[var(--muted)]">
               روش دریافت سفارش و پرداخت
@@ -287,7 +267,8 @@ export default function CheckoutPage() {
 
           <div>
             <label className="mb-1.5 block text-xs font-bold text-[var(--muted)]">
-              توضیحات برای فروشنده <span className="font-normal">(اختیاری)</span>
+              توضیحات برای فروشنده{" "}
+              <span className="font-normal">(اختیاری)</span>
             </label>
             <textarea
               value={customerNote}
@@ -304,13 +285,71 @@ export default function CheckoutPage() {
               <ReceiptIcon className="h-5 w-5" />
               اطلاعات واریز وجه
             </p>
+            <PaymentCard />
             <p className="mt-2">
-              برای جلوگیری از واریز به شماره‌ی نادرست، پیش از پرداخت اطلاعات
-              حساب را تلفنی از فروشگاه دریافت کنید. مبلغ{" "}
+              مبلغ{" "}
               <span className="font-black text-white">
                 {formatToman(totalAmount)}
               </span>{" "}
-              را پس از هماهنگی واریز کرده و تصویر فیش را بارگذاری کنید.
+              را به کارت بالا واریز و تصویر فیش را بارگذاری کنید. پیش از تأیید
+              انتقال، شماره کارت و مشخصات صاحب حساب را در برنامه بانکی بررسی
+              کنید.
+            </p>
+            <div className="mt-5 rounded-xl bg-black/15 p-3">
+              <p className="mb-3 text-xs leading-6 text-slate-300">
+                اطلاعات زیر از حساب شما خوانده شده‌اند؛ در صورت نیاز مشخصات
+                گیرنده را اصلاح کنید. تکمیل این اطلاعات برای ارسال با پیک و
+                تحویل حضوری الزامی است.
+              </p>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div>
+                  <label
+                    htmlFor="recipient-name"
+                    className="mb-1.5 block text-xs font-bold text-[var(--muted)]"
+                  >
+                    نام و نام خانوادگی گیرنده *
+                  </label>
+                  <input
+                    id="recipient-name"
+                    required
+                    minLength={2}
+                    maxLength={128}
+                    value={fullName ?? user.fullName ?? ""}
+                    onChange={(e) => setFullName(e.target.value)}
+                    className="input-field"
+                    autoComplete="name"
+                  />
+                </div>
+                <div>
+                  <label
+                    htmlFor="recipient-phone"
+                    className="mb-1.5 block text-xs font-bold text-[var(--muted)]"
+                  >
+                    شماره تلفن *
+                  </label>
+                  <input
+                    required
+                    id="recipient-phone"
+                    type="tel"
+                    maxLength={32}
+                    value={phone ?? user.phone ?? ""}
+                    onChange={(e) => setPhone(e.target.value)}
+                    dir="ltr"
+                    inputMode="tel"
+                    className="input-field text-left"
+                    autoComplete="tel"
+                  />
+                </div>
+              </div>
+              <p className="mt-3 text-xs font-bold leading-7 text-amber-200">
+                ★ شماره تلفن را حتماً بررسی کنید و از درست بودن نام و شماره
+                گیرنده مطمئن شوید؛ فروشنده برای هماهنگی تحویل و رفع مشکل با این
+                شماره تماس می‌گیرد.
+              </p>
+            </div>
+            <p className="mt-4 text-xs leading-6">
+              برای سؤال درباره واریز یا پیگیری پس از ثبت سفارش، حتماً با شماره
+              زیر تماس بگیرید و کد سفارش را اعلام کنید.
             </p>
             <a
               href={STORE_PHONE_TEL}

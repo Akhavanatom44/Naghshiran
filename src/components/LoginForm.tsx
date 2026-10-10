@@ -235,16 +235,19 @@ export default function LoginForm({
                 className="mb-1.5 block text-xs font-bold text-[var(--muted)]"
               >
                 نام و نام خانوادگی{" "}
-                <span className="font-normal">(اختیاری)</span>
+                <span className="text-rose-300">*</span>
               </label>
               <div className="relative">
                 <UserIcon className="pointer-events-none absolute left-3.5 top-1/2 h-4.5 w-4.5 -translate-y-1/2 text-[var(--muted)]" />
                 <input
                   id="register-name"
+                  required
+                  minLength={2}
+                  maxLength={128}
                   value={fullName}
                   onChange={(event) => setFullName(event.target.value)}
                   className="input-field with-icon"
-                  placeholder="برای خطاب بهتر فروشگاه"
+                  placeholder="نام و نام خانوادگی گیرنده"
                   autoComplete="name"
                 />
               </div>
