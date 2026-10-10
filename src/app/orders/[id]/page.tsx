@@ -19,9 +19,9 @@ export default async function OrderDetailPage({
   searchParams: Promise<{ submitted?: string }>;
 }) {
   const user = await getCurrentUser();
-  if (!user) redirect("/login");
-
   const { id } = await params;
+  if (!user) redirect(`/login?next=${encodeURIComponent(`/orders/${id}`)}`);
+
   const { submitted } = await searchParams;
   const orderId = Number(id);
   if (!Number.isInteger(orderId)) notFound();

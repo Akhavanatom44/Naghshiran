@@ -51,7 +51,14 @@ export default function LoginForm({
         );
         clearPendingProduct();
         if (product && product.canPurchase !== false && product.stock > 0) {
-          addItem({ ...product, productId: product.id });
+          addItem({
+            productId: product.id,
+            code: product.code,
+            name: product.name,
+            price: product.price,
+            imageUrl: product.imageUrl,
+            stock: product.stock,
+          });
           showToast("محصول انتخاب‌شده به سبد خرید اضافه شد");
         } else {
           showToast(

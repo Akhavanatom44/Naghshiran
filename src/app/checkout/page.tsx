@@ -6,6 +6,11 @@ import { useCart } from "@/lib/cart-context";
 import { useAuth } from "@/lib/auth-context";
 import { faNum, formatToman } from "@/lib/format";
 import {
+  compressReceipt,
+  RECEIPT_INPUT_MAX_BYTES,
+  RECEIPT_MIME_TYPES,
+} from "@/lib/receipt-image";
+import {
   STORE_ADDRESS,
   STORE_PHONE_DISPLAY,
   STORE_PHONE_TEL,
@@ -16,15 +21,6 @@ import {
   ReceiptIcon,
   TruckIcon,
 } from "@/components/icons";
-
-function fileToDataUrl(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result as string);
-    reader.onerror = reject;
-    reader.readAsDataURL(file);
-  });
-}
 
 export default function CheckoutPage() {
   const router = useRouter();
@@ -40,6 +36,7 @@ export default function CheckoutPage() {
   const [receiptPreview, setReceiptPreview] = useState("");
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [processingReceipt, setProcessingReceipt] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const submitLock = useRef(false);
   const completed = useRef(false);
@@ -62,20 +59,29 @@ export default function CheckoutPage() {
     const file = e.target.files?.[0];
     if (!file) return;
     setReceiptPreview("");
-    if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
+    if (!RECEIPT_MIME_TYPES.includes(file.type)) {
       setError("فقط تصویر JPEG، PNG یا WebP مجاز است");
       return;
     }
-    if (file.size > 5 * 1024 * 1024) {
-      setError("حجم تصویر نباید بیشتر از ۵ مگابایت باشد");
+    if (file.size > RECEIPT_INPUT_MAX_BYTES) {
+      setError("حجم تصویر خیلی زیاد است؛ عکس دیگری انتخاب کنید");
       return;
     }
     setError("");
+    setProcessingReceipt(true);
     try {
-      const dataUrl = await fileToDataUrl(file);
+      // Phone photos are often several MB; shrink them below the D1 row cap.
+      const dataUrl = await compressReceipt(file);
       setReceiptPreview(dataUrl);
-    } catch {
-      setError("خواندن تصویر انجام نشد؛ دوباره انتخاب کنید");
+    } catch (err) {
+      setReceiptPreview("");
+      setError(
+        err instanceof Error && err.message === "too-large"
+          ? "تصویر فیش بعد از فشرده‌سازی هنوز بزرگ است؛ اسکرین‌شات یا عکس کم‌حجم‌تری انتخاب کنید"
+          : "خواندن تصویر انجام نشد؛ دوباره انتخاب کنید",
+      );
+    } finally {
+      setProcessingReceipt(false);
     }
   }
 
@@ -331,10 +337,14 @@ export default function CheckoutPage() {
 
           <button
             type="submit"
-            disabled={submitting}
+            disabled={submitting || processingReceipt}
             className="btn-primary w-full rounded-xl py-4 text-sm"
           >
-            {submitting ? "در حال ثبت سفارش..." : "ثبت نهایی خرید و ارسال فیش"}
+            {submitting
+              ? "در حال ثبت سفارش..."
+              : processingReceipt
+                ? "در حال آماده‌سازی تصویر فیش..."
+                : "ثبت نهایی خرید و ارسال فیش"}
           </button>
         </form>
 

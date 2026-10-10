@@ -11,7 +11,9 @@ function normalizeSearch(value: string) {
     .replace(/ك/g, "ک")
     .replace(/[۰-۹]/g, (digit) => String("۰۱۲۳۴۵۶۷۸۹".indexOf(digit)))
     .replace(/[٠-٩]/g, (digit) => String("٠١٢٣٤٥٦٧٨٩".indexOf(digit)))
-    .replace(/\u200c/g, " ");
+    .replace(/[ةۀ]/g, "ه")
+    // Half-spaces are optional in search: "نقشه‌برداری" and "نقشهبرداری" match.
+    .replace(/\u200c/g, "");
 }
 
 const ALL = "کلیه محصولات";

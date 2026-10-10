@@ -6,6 +6,7 @@ import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import ProductCatalog from "../src/components/ProductCatalog";
 import ProductImage from "../src/components/ProductImage";
+import { RECEIPT_MAX_CHARS } from "../src/lib/receipt-image";
 import {
   addCartItem,
   setCartQuantity,
@@ -209,7 +210,7 @@ test("missing image URL starts with the optimized catalog photo", () => {
 });
 
 test("new studio images and every SVG fallback are decodable", async () => {
-  const codes = [96021, 96022, 96023, 96024, 96025, 96026, 96027, 96028, 96029, 96032];
+  const codes = [96021, 96022, 96023, 96024, 96025, 96026, 96027, 96028, 96029, 96030, 96031, 96032, 96033, 96034, 96035, 96036, 96037, 96038, 96039, 96040];
   for (const code of codes) {
     const photo = await sharp(`public/images/catalog/${code}.jpg`).metadata();
     assert.equal(photo.format, "jpeg");
@@ -224,4 +225,20 @@ test("new studio images and every SVG fallback are decodable", async () => {
     assert.equal(fallback.format, "svg");
     assert.ok(fallback.width && fallback.height);
   }
+});
+
+test("receipt limit stays under D1's 2 MB per-row cap", () => {
+  assert.ok(RECEIPT_MAX_CHARS < 2_000_000);
+  const tooLarge = `data:image/jpeg;base64,${"A".repeat(RECEIPT_MAX_CHARS)}`;
+  assert.equal(
+    checkoutSchema.safeParse({ ...input, receiptImage: tooLarge }).success,
+    false,
+  );
+  assert.equal(
+    checkoutSchema.safeParse({
+      ...input,
+      receiptImage: `data:image/jpeg;base64,${"A".repeat(1000)}`,
+    }).success,
+    true,
+  );
 });

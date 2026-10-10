@@ -15,7 +15,7 @@ export default async function OrdersPage() {
   const user = await getCurrentUser();
   if (!user) redirect("/login?next=/orders");
 
-  type OrderRow = typeof orders.$inferSelect;
+  type OrderRow = Omit<typeof orders.$inferSelect, "receiptImage">;
   type ItemRow = typeof orderItems.$inferSelect;
 
   let myOrders: OrderRow[] = [];
@@ -23,7 +23,25 @@ export default async function OrdersPage() {
   let db: Database | null = null;
   try {
     db = await getDb();
-    myOrders = await db.select().from(orders).where(eq(orders.userId, user.id)).orderBy(desc(orders.createdAt));
+    // Receipt photos can be ~2 MB each; the list never needs them.
+    myOrders = await db
+      .select({
+        id: orders.id,
+        userId: orders.userId,
+        status: orders.status,
+        totalAmount: orders.totalAmount,
+        fullName: orders.fullName,
+        phone: orders.phone,
+        deliveryMethod: orders.deliveryMethod,
+        address: orders.address,
+        adminNote: orders.adminNote,
+        telegramStatus: orders.telegramStatus,
+        createdAt: orders.createdAt,
+        updatedAt: orders.updatedAt,
+      })
+      .from(orders)
+      .where(eq(orders.userId, user.id))
+      .orderBy(desc(orders.createdAt));
   } catch {
     dbError = true;
   }

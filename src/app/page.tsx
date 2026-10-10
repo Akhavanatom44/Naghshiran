@@ -1,7 +1,7 @@
 import { presentProduct } from "@/lib/product-pricing";
 import { getDb } from "@/db";
 import { products } from "@/db/schema";
-import { desc, eq } from "drizzle-orm";
+import { asc, eq } from "drizzle-orm";
 import ProductCatalog from "@/components/ProductCatalog";
 import type { ProductForCard } from "@/components/ProductCard";
 import { CATALOG_PRODUCTS } from "@/data/catalog";
@@ -20,7 +20,7 @@ export default async function HomePage() {
       .select()
       .from(products)
       .where(eq(products.isActive, true))
-      .orderBy(desc(products.createdAt));
+      .orderBy(asc(products.code));
 
     if (rows.length === 0) {
       databaseIsEmpty = true;

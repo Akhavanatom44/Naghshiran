@@ -1,7 +1,7 @@
 import { presentProduct } from "@/lib/product-pricing";
 import { getDb } from "@/db";
 import { products } from "@/db/schema";
-import { eq, desc } from "drizzle-orm";
+import { eq, asc } from "drizzle-orm";
 import { CATALOG_PRODUCTS } from "@/data/catalog";
 
 export const dynamic = "force-dynamic";
@@ -13,7 +13,7 @@ export async function GET() {
       .select()
       .from(products)
       .where(eq(products.isActive, true))
-      .orderBy(desc(products.createdAt));
+      .orderBy(asc(products.code));
 
     return Response.json({
       products: rows.map(presentProduct),

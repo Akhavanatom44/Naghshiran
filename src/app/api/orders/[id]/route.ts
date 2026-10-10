@@ -28,8 +28,22 @@ export async function GET(
     }
 
     const db = await getDb();
+    // Polled every few seconds by the order page: never send the receipt blob.
     const rows = await db
-      .select()
+      .select({
+        id: orders.id,
+        userId: orders.userId,
+        status: orders.status,
+        totalAmount: orders.totalAmount,
+        fullName: orders.fullName,
+        phone: orders.phone,
+        deliveryMethod: orders.deliveryMethod,
+        address: orders.address,
+        adminNote: orders.adminNote,
+        telegramStatus: orders.telegramStatus,
+        createdAt: orders.createdAt,
+        updatedAt: orders.updatedAt,
+      })
       .from(orders)
       .where(and(eq(orders.id, orderId), eq(orders.userId, user.id)))
       .limit(1);

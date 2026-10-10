@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { normalizeIranianMobile } from "./phone";
+import { RECEIPT_MAX_CHARS } from "./receipt-image";
 
 export const checkoutSchema = z
   .object({
@@ -42,7 +43,10 @@ export const checkoutSchema = z
     address: z.string().trim().max(500).optional().nullable(),
     receiptImage: z
       .string()
-      .max(8_000_000, "حجم تصویر فیش زیاد است")
+      .max(
+        RECEIPT_MAX_CHARS,
+        "حجم تصویر فیش زیاد است؛ تصویر را دوباره انتخاب کنید",
+      )
       .regex(
         /^data:image\/(?:jpeg|png|webp);base64,[A-Za-z0-9+/]+={0,2}$/,
         "فیش باید تصویر JPEG، PNG یا WebP معتبر باشد",
