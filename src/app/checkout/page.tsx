@@ -33,6 +33,7 @@ export default function CheckoutPage() {
     "ship",
   );
   const [address, setAddress] = useState("");
+  const [customerNote, setCustomerNote] = useState("");
   const [receiptPreview, setReceiptPreview] = useState("");
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -111,6 +112,7 @@ export default function CheckoutPage() {
         phone: phone ?? user.phone ?? "",
         deliveryMethod,
         address: deliveryMethod === "ship" ? address : null,
+        customerNote: customerNote.trim() || null,
         receiptImage: receiptPreview,
         expectedTotal: totalAmount,
       };
@@ -223,7 +225,7 @@ export default function CheckoutPage() {
 
           <div>
             <label className="mb-2 block text-xs font-bold text-[var(--muted)]">
-              روش تحویل
+              روش دریافت سفارش و پرداخت
             </label>
             <div className="grid gap-3 sm:grid-cols-2">
               <button
@@ -239,10 +241,10 @@ export default function CheckoutPage() {
                   <TruckIcon
                     className={`h-5 w-5 ${deliveryMethod === "ship" ? "text-amber-400" : "text-[var(--muted)]"}`}
                   />
-                  ارسال با پیک
+                  ارسال با پیک (با پیش‌پرداخت)
                 </span>
                 <span className="mt-1.5 block text-xs leading-5 text-[var(--muted)]">
-                  هزینه پیک بر عهده مشتری است
+                  پس از واریز و تأیید فیش، فروشنده برای هماهنگی تماس می‌گیرد
                 </span>
               </button>
               <button
@@ -282,6 +284,20 @@ export default function CheckoutPage() {
               />
             </div>
           )}
+
+          <div>
+            <label className="mb-1.5 block text-xs font-bold text-[var(--muted)]">
+              توضیحات برای فروشنده <span className="font-normal">(اختیاری)</span>
+            </label>
+            <textarea
+              value={customerNote}
+              onChange={(e) => setCustomerNote(e.target.value)}
+              rows={2}
+              maxLength={1000}
+              className="input-field resize-none"
+              placeholder="مثلاً زمان مناسب تماس یا توضیحی درباره تحویل"
+            />
+          </div>
 
           <div className="rounded-2xl border border-amber-400/30 bg-amber-400/10 p-4 text-sm leading-7 text-amber-100">
             <p className="flex items-center gap-2 font-black text-amber-300">

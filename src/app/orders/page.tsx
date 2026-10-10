@@ -34,6 +34,7 @@ export default async function OrdersPage() {
         phone: orders.phone,
         deliveryMethod: orders.deliveryMethod,
         address: orders.address,
+        customerNote: orders.customerNote,
         adminNote: orders.adminNote,
         telegramStatus: orders.telegramStatus,
         createdAt: orders.createdAt,

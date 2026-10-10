@@ -4,8 +4,10 @@ import catalogImages from "./catalog-images.json";
 const IMAGE_BY_CODE: Record<string, string> = catalogImages;
 
 /** Optimized product photo when available, otherwise the local catalog illustration. */
+export const CATALOG_PLACEHOLDER_IMAGE = "/images/catalog/placeholder.svg";
+
 export function catalogImageUrl(code: number): string {
-  return IMAGE_BY_CODE[String(code)] ?? `/images/catalog/${code}.svg`;
+  return IMAGE_BY_CODE[String(code)] ?? CATALOG_PLACEHOLDER_IMAGE;
 }
 
 /** Every supplied listing included a listing age, so its source price receives the requested 50% update. */

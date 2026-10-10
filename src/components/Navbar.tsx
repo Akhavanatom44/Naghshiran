@@ -49,6 +49,14 @@ export default function Navbar() {
               {link.label}
             </Link>
           ))}
+          {user?.isAdmin && (
+            <Link
+              href="/admin"
+              className="mr-2 rounded-xl border border-amber-400/30 bg-amber-400/10 px-3.5 py-2 text-sm font-bold text-amber-200 transition hover:bg-amber-400/20"
+            >
+              پنل مدیریت
+            </Link>
+          )}
           <a
             href={STORE_PHONE_TEL}
             className="mr-2 hidden items-center gap-2 rounded-xl border border-[rgba(148,184,220,0.16)] bg-white/5 px-3.5 py-2 text-sm font-bold text-white transition hover:border-amber-400/50 hover:text-amber-300 lg:flex"

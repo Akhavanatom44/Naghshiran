@@ -111,6 +111,11 @@ export default function Footer() {
                 ثبت‌نام
               </Link>
             </li>
+            <li>
+              <Link href="/admin" className="font-bold text-amber-200 transition hover:text-amber-300">
+                پنل مدیریت فروشگاه
+              </Link>
+            </li>
           </ul>
         </div>
 
