@@ -31,6 +31,7 @@ const SCHEMA_STATEMENTS: string[] = [
   `CREATE TABLE IF NOT EXISTS order_items (id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, order_id INTEGER NOT NULL, product_id INTEGER, product_name TEXT NOT NULL, product_code INTEGER NOT NULL, unit_price INTEGER NOT NULL, quantity INTEGER NOT NULL, FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE, FOREIGN KEY (product_id) REFERENCES products(id))`,
   `CREATE UNIQUE INDEX IF NOT EXISTS users_username_unique ON users(username)`,
   `CREATE UNIQUE INDEX IF NOT EXISTS products_code_unique ON products(code)`,
+  `CREATE TABLE IF NOT EXISTS app_settings (key TEXT PRIMARY KEY NOT NULL, value TEXT NOT NULL)`,
 ];
 
 // Remembered per Worker isolate so the checks run once, not on every request.

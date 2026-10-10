@@ -20,6 +20,7 @@ import {
   pendingProductCode,
   savePendingCartProduct,
 } from "../src/lib/cart-storage";
+import { resolveSessionSecret } from "../src/lib/auth";
 
 const product = {
   productId: 1,
@@ -210,7 +211,7 @@ test("missing image URL starts with the optimized catalog photo", () => {
 });
 
 test("new studio images and every SVG fallback are decodable", async () => {
-  const codes = [96021, 96022, 96023, 96024, 96025, 96026, 96027, 96028, 96029, 96030, 96031, 96032, 96033, 96034, 96035, 96036, 96037, 96038, 96039, 96040];
+  const codes = Array.from({ length: 30 }, (_, i) => 96021 + i);
   for (const code of codes) {
     const photo = await sharp(`public/images/catalog/${code}.jpg`).metadata();
     assert.equal(photo.format, "jpeg");
@@ -221,12 +222,44 @@ test("new studio images and every SVG fallback are decodable", async () => {
   }
   const catalog = JSON.parse(readFileSync("src/data/catalog.json", "utf8"));
   for (const { code } of catalog) {
+    // Every product must have a real photo source now (not just SVG art).
+    assert.ok(
+      existsSync(`public/images/catalog/${code}.jpg`),
+      `Missing photo source for ${code}`,
+    );
     const fallback = await sharp(`public/images/catalog/${code}.svg`).metadata();
     assert.equal(fallback.format, "svg");
     assert.ok(fallback.width && fallback.height);
   }
 });
 
+test("session secret resolves without configuration (login must not 503)", async () => {
+  const previous = process.env.SESSION_SECRET;
+  const encoder = new TextEncoder();
+  try {
+    delete process.env.SESSION_SECRET;
+    const fallback = await resolveSessionSecret();
+    assert.ok(
+      fallback instanceof Uint8Array && fallback.length > 0,
+      "unconfigured secret must still resolve",
+    );
+    assert.deepEqual(await resolveSessionSecret(), fallback, "secret is stable");
+
+    process.env.SESSION_SECRET = "configured-secret-with-more-than-32-chars!";
+    assert.deepEqual(
+      await resolveSessionSecret(),
+      encoder.encode("configured-secret-with-more-than-32-chars!"),
+    );
+
+    // A too-short configured value is ignored instead of breaking login.
+    process.env.SESSION_SECRET = "too-short";
+    const resilient = await resolveSessionSecret();
+    assert.ok(resilient instanceof Uint8Array && resilient.length > 0);
+  } finally {
+    if (previous === undefined) delete process.env.SESSION_SECRET;
+    else process.env.SESSION_SECRET = previous;
+  }
+});
 test("receipt limit stays under D1's 2 MB per-row cap", () => {
   assert.ok(RECEIPT_MAX_CHARS < 2_000_000);
   const tooLarge = `data:image/jpeg;base64,${"A".repeat(RECEIPT_MAX_CHARS)}`;

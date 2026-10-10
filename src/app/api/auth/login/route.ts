@@ -4,7 +4,7 @@ import { sql } from "drizzle-orm";
 import {
   verifyPassword,
   setSessionCookie,
-  assertSessionConfigured,
+  ensureSessionSecret,
 } from "@/lib/auth";
 import { z } from "zod";
 
@@ -40,8 +40,9 @@ export async function POST(req: Request) {
   }
 
   try {
-    assertSessionConfigured();
-  } catch {
+    await ensureSessionSecret();
+  } catch (error) {
+    console.error("[auth/login] session secret error", error);
     return Response.json(
       { error: "ورود موقتاً آماده نیست؛ لطفاً با فروشگاه تماس بگیرید" },
       { status: 503 },

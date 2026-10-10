@@ -4,7 +4,7 @@ import { eq, sql } from "drizzle-orm";
 import {
   hashPassword,
   setSessionCookie,
-  assertSessionConfigured,
+  ensureSessionSecret,
 } from "@/lib/auth";
 import { normalizeIranianMobile } from "@/lib/phone";
 import { z } from "zod";
@@ -68,8 +68,9 @@ export async function POST(req: Request) {
 
   // Fail before creating an account if cookies cannot be signed.
   try {
-    assertSessionConfigured();
-  } catch {
+    await ensureSessionSecret();
+  } catch (error) {
+    console.error("[auth/register] session secret error", error);
     return Response.json(
       {
         error: "ورود و ثبت‌نام موقتاً آماده نیست؛ لطفاً با فروشگاه تماس بگیرید",
