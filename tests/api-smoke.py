@@ -13,7 +13,7 @@ account = {'username':'api_'+suffix, 'password':'validpassword123', 'phone':'091
 assert request('/api/auth/register', account)[0] == 200
 assert request('/api/auth/me')[1]['user']['username'] == account['username']
 products = request('/api/products')[1]['products']
-p = next(p for p in products if p['code'] == 96013)
+p = next(p for p in products if p['code'] == 212)
 assert p['price'] == 1275000
 payload = {'requestKey':str(uuid.uuid4()), 'expectedTotal':p['price'], 'items':[{'productId':p['id'],'quantity':1}], 'fullName':account['fullName'], 'phone':account['phone'], 'deliveryMethod':'pickup', 'address':None, 'receiptImage':'data:image/png;base64,aGVsbG8='}
 status, order = request('/api/orders',payload)
@@ -21,7 +21,7 @@ assert status == 200, (status,order)
 assert request('/api/orders',payload)[1]['orderId'] == order['orderId']
 assert request('/api/orders', {**payload, 'fullName':'نام دیگر'})[0] == 409
 assert request('/api/orders', {**payload, 'requestKey':str(uuid.uuid4()), 'expectedTotal':0})[0] == 409
-p2 = next(p for p in request('/api/products')[1]['products'] if p['code']==96013)
+p2 = next(p for p in request('/api/products')[1]['products'] if p['code']==212)
 assert p2['stock'] == p['stock']-1
 assert request('/api/orders/'+str(order['orderId']))[1]['order']['totalAmount'] == p['price']
 assert request('/api/auth/logout', {})[0] == 200

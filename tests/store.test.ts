@@ -21,14 +21,16 @@ import {
   savePendingCartProduct,
 } from "../src/lib/cart-storage";
 import { resolveSessionSecret } from "../src/lib/auth";
+import { CATALOG_PRODUCTS } from "../src/data/catalog";
+import { faNum } from "../src/lib/format";
 
 const product = {
   productId: 1,
-  code: 96013,
+  code: 212,
   name: "متر",
   price: 1500000,
   stock: 3,
-  imageUrl: "/images/catalog/96013.webp",
+  imageUrl: "/images/catalog/212.webp",
 };
 test("adding increments exactly one and never exceeds stock", () => {
   let cart = addCartItem([], product);
@@ -81,16 +83,16 @@ test("safe return navigation blocks open redirects and auth loops", () => {
 });
 test("catalog, cart and checkout share the real discount price", () => {
   const p = presentProduct({
-    code: 96013,
+    code: 212,
     price: 1500000,
-    imageUrl: "/images/catalog/96013.svg",
+    imageUrl: "/images/catalog/212.svg",
   });
   assert.equal(p.price, 1275000);
   assert.equal(p.price, sellingPrice(p.code, 1500000));
   assert.equal(p.originalPrice, 1500000);
-  assert.equal(p.imageUrl, "/images/catalog/96013.webp");
+  assert.equal(p.imageUrl, "/images/catalog/212.webp");
   assert.equal(
-    presentProduct({ code: 96013, price: 1000, imageUrl: "/custom.jpg" })
+    presentProduct({ code: 212, price: 1000, imageUrl: "/custom.jpg" })
       .imageUrl,
     "/custom.jpg",
   );
@@ -142,6 +144,25 @@ test("retry fingerprint ignores request key, not changed details", async () => {
     await checkoutHash({ ...valid, fullName: "نام جدید" }),
   );
 });
+test("catalog codes are consecutive from 200 and live in descriptions, not images", () => {
+  assert.deepEqual(
+    CATALOG_PRODUCTS.map((item) => item.code),
+    Array.from({ length: 50 }, (_, index) => 200 + index),
+  );
+  for (const item of CATALOG_PRODUCTS) {
+    assert.ok(
+      item.description.includes(`کد محصول: ${faNum(item.code)}`),
+      `Code is missing from description ${item.code}`,
+    );
+    assert.notEqual(item.imageUrl, "/images/catalog/placeholder.svg");
+    const fallback = readFileSync(
+      `public/images/catalog/${item.code}.svg`,
+      "utf8",
+    );
+    assert.ok(!fallback.includes(`NR-${item.code}`));
+  }
+});
+
 test("every catalog code resolves to a real, decodable local image", async () => {
   const images = JSON.parse(
     readFileSync("src/data/catalog-images.json", "utf8"),
@@ -169,10 +190,10 @@ test("pending guest click is tab scoped, expires and tolerates blocked storage",
     value: { sessionStorage: storage, localStorage: storage },
   });
   assert.equal(savePendingCartProduct(product), true);
-  assert.equal(pendingProductCode(), 96013);
+  assert.equal(pendingProductCode(), 212);
   values.set(
     "naghshiran-pending-cart-item",
-    JSON.stringify({ code: 96013, createdAt: Date.now() - 31 * 60000 }),
+    JSON.stringify({ code: 212, createdAt: Date.now() - 31 * 60000 }),
   );
   assert.equal(pendingProductCode(), null);
   Object.defineProperty(globalThis, "window", {
@@ -203,15 +224,15 @@ test("catalog introduction remains first even without offers or products", () =>
 
 test("missing image URL starts with the optimized catalog photo", () => {
   const markup = renderToStaticMarkup(createElement(ProductImage, {
-    code: 96024,
+    code: 223,
     name: "باتری",
     imageUrl: "  ",
   }));
-  assert.ok(markup.includes('src="/images/catalog/96024.webp"'));
+  assert.ok(markup.includes('src="/images/catalog/223.webp"'));
 });
 
 test("new studio images and every SVG fallback are decodable", async () => {
-  const codes = Array.from({ length: 30 }, (_, i) => 96021 + i);
+  const codes = Array.from({ length: 30 }, (_, i) => 220 + i);
   for (const code of codes) {
     const photo = await sharp(`public/images/catalog/${code}.jpg`).metadata();
     assert.equal(photo.format, "jpeg");

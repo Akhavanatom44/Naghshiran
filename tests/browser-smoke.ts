@@ -17,10 +17,10 @@ async function main() {
     page.on("pageerror", (error) => errors.push(error.message));
     await page.goto(base, { waitUntil: "networkidle" });
     assert.equal(await page.locator("#special-offers article").count(), 4);
-    await page.getByRole("searchbox").fill("۹۶۰۱۳");
+    await page.getByRole("searchbox").fill("۲۱۲");
     assert.equal(await page.locator("#shop article").count(), 1);
     await page.locator("#shop article button").click();
-    await page.waitForURL("**/login?next=%2F&add=96013");
+    await page.waitForURL("**/login?next=%2F&add=212");
     await page.getByRole("button", { name: "ثبت‌نام", exact: true }).click();
     const suffix = Date.now().toString().slice(-8);
     const username = "test_" + suffix;
@@ -32,13 +32,13 @@ async function main() {
       .getByRole("button", { name: "ثبت‌نام و ادامه خرید", exact: true })
       .click();
     await page.waitForURL(base + "/", { timeout: 30000 });
-    await page.getByRole("searchbox").fill("۹۶۰۱۳");
+    await page.getByRole("searchbox").fill("۲۱۲");
     assert.equal(
       await page.locator("#shop .stepper-pill span").textContent(),
       "۱",
     );
     await page.reload({ waitUntil: "networkidle" });
-    await page.getByRole("searchbox").fill("۹۶۰۱۳");
+    await page.getByRole("searchbox").fill("۲۱۲");
     assert.equal(
       await page.locator("#shop .stepper-pill span").textContent(),
       "۱",
@@ -57,7 +57,7 @@ async function main() {
       "every catalog product image should be served",
     );
     const product = products.products.find(
-      (p: { code: number }) => p.code === 96013,
+      (p: { code: number }) => p.code === 212,
     );
     assert.equal(product.price, 1275000);
     const payload = {
@@ -86,7 +86,7 @@ async function main() {
     assert.equal(changed.status(), 409);
     const after = await (await page.request.get(base + "/api/products")).json();
     assert.equal(
-      after.products.find((p: { code: number }) => p.code === 96013).stock,
+      after.products.find((p: { code: number }) => p.code === 212).stock,
       product.stock - 1,
     );
 
@@ -96,16 +96,16 @@ async function main() {
       .getByRole("button", { name: "خروج از حساب کاربری" })
       .click();
     await page.waitForURL(base + "/");
-    await page.getByRole("searchbox").fill("96014");
+    await page.getByRole("searchbox").fill("213");
     await page.locator("#shop article button").click();
-    await page.waitForURL("**/login?next=%2F&add=96014");
+    await page.waitForURL("**/login?next=%2F&add=213");
     await page.locator("#auth-username").fill(username);
     await page.locator("#auth-password").fill(password);
     await page
       .getByRole("button", { name: "ورود به حساب", exact: true })
       .click();
     await page.waitForURL(base + "/", { timeout: 30000 });
-    await page.getByRole("searchbox").fill("96014");
+    await page.getByRole("searchbox").fill("213");
     assert.equal(
       await page.locator("#shop .stepper-pill span").textContent(),
       "۱",

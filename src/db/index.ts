@@ -29,6 +29,10 @@ export type Database = ReturnType<typeof createDatabase>;
  */
 const NOW_MS = "(CAST((julianday('now') - 2440587.5) * 86400000 AS INTEGER))";
 
+/** Bump when built-in catalog metadata needs a one-time D1 refresh. */
+const CATALOG_DATA_VERSION = "codes-200-v2";
+const CATALOG_VERSION_KEY = "catalog_data_version";
+
 const SCHEMA_STATEMENTS: string[] = [
   `CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, username TEXT NOT NULL, password_hash TEXT NOT NULL, full_name TEXT, phone TEXT, is_admin INTEGER DEFAULT 0 NOT NULL, created_at INTEGER DEFAULT ${NOW_MS} NOT NULL)`,
   `CREATE TABLE IF NOT EXISTS products (id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, code INTEGER NOT NULL, name TEXT NOT NULL, description TEXT DEFAULT '' NOT NULL, category TEXT DEFAULT 'سایر' NOT NULL, price INTEGER NOT NULL, image_url TEXT DEFAULT '' NOT NULL, is_active INTEGER DEFAULT 1 NOT NULL, stock INTEGER DEFAULT 0 NOT NULL, created_at INTEGER DEFAULT ${NOW_MS} NOT NULL, updated_at INTEGER DEFAULT ${NOW_MS} NOT NULL)`,
@@ -57,6 +61,99 @@ async function ensureOptionalColumns(database: D1Database) {
       .prepare("ALTER TABLE orders ADD COLUMN customer_note TEXT")
       .run();
   }
+}
+
+async function runInBatches(
+  database: D1Database,
+  statements: D1PreparedStatement[],
+) {
+  // D1 accepts larger batches, but small chunks stay comfortably within its
+  // statement and payload limits and make this one-time upgrade predictable.
+  for (let index = 0; index < statements.length; index += 25) {
+    await database.batch(statements.slice(index, index + 25));
+  }
+}
+
+/**
+ * Keep an already-populated D1 database aligned with the bundled catalog.
+ *
+ * Older deployments used codes 96001..96050. Renumbering the existing rows
+ * rather than deleting/reseeding them preserves product IDs, stock levels,
+ * prices and order-item references. Built-in image URLs are refreshed while a
+ * custom merchant image is deliberately kept. The version marker means these
+ * writes happen once per database, not once per Worker isolate.
+ */
+async function ensureCatalog(database: D1Database) {
+  const version = await database
+    .prepare("SELECT value FROM app_settings WHERE key = ?")
+    .bind(CATALOG_VERSION_KEY)
+    .first<{ value: string }>();
+  if (version?.value === CATALOG_DATA_VERSION) return;
+
+  const renumberStatements: D1PreparedStatement[] = [];
+  for (let index = 0; index < CATALOG_PRODUCTS.length; index++) {
+    const oldCode = 96001 + index;
+    const newCode = CATALOG_PRODUCTS[index].code;
+
+    // A partially-upgraded database can contain both rows. Keep the new one
+    // sellable and retain the old row only as an inactive historical target.
+    renumberStatements.push(
+      database
+        .prepare(
+          "UPDATE products SET is_active = 0 WHERE code = ? AND EXISTS (SELECT 1 FROM products AS current WHERE current.code = ?)",
+        )
+        .bind(oldCode, newCode),
+      database
+        .prepare(
+          "UPDATE products SET code = ? WHERE code = ? AND NOT EXISTS (SELECT 1 FROM products AS current WHERE current.code = ?)",
+        )
+        .bind(newCode, oldCode, newCode),
+    );
+  }
+  await runInBatches(database, renumberStatements);
+
+  // Historical orders display a snapshot code, so update that snapshot too.
+  await database
+    .prepare(
+      "UPDATE order_items SET product_code = product_code - 95801 WHERE product_code BETWEEN 96001 AND 96050",
+    )
+    .run();
+
+  const upsert = `INSERT INTO products (code, name, description, category, price, image_url, is_active, stock)
+    VALUES (?, ?, ?, ?, ?, ?, 1, ?)
+    ON CONFLICT(code) DO UPDATE SET
+      name = excluded.name,
+      description = excluded.description,
+      category = excluded.category,
+      image_url = CASE
+        WHEN products.image_url = '' OR products.image_url GLOB '/images/catalog/*'
+          THEN excluded.image_url
+        ELSE products.image_url
+      END,
+      updated_at = ${NOW_MS}`;
+  await runInBatches(
+    database,
+    CATALOG_PRODUCTS.map((product) =>
+      database
+        .prepare(upsert)
+        .bind(
+          product.code,
+          product.name,
+          product.description,
+          product.category,
+          product.price,
+          product.imageUrl,
+          product.stock,
+        ),
+    ),
+  );
+
+  await database
+    .prepare(
+      "INSERT INTO app_settings (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value",
+    )
+    .bind(CATALOG_VERSION_KEY, CATALOG_DATA_VERSION)
+    .run();
 }
 
 async function ensureSchema(database: D1Database) {
@@ -98,32 +195,9 @@ async function ensureSchema(database: D1Database) {
     )
     .run();
 
-  // Seed the catalog once when the products table is empty, so ordering works
-  // without a manual `npm run db:seed`.
-  const countRow = await database
-    .prepare("SELECT COUNT(*) AS n FROM products")
-    .first<{ n: number }>();
-  if (!countRow || Number(countRow.n) === 0) {
-    const insert =
-      "INSERT INTO products (code, name, description, category, price, image_url, is_active, stock) VALUES (?, ?, ?, ?, ?, ?, 1, ?) ON CONFLICT(code) DO NOTHING";
-    const statements = CATALOG_PRODUCTS.map((product) =>
-      database
-        .prepare(insert)
-        .bind(
-          product.code,
-          product.name,
-          product.description,
-          product.category,
-          product.price,
-          product.imageUrl,
-          product.stock,
-        ),
-    );
-    // D1 allows large batches, but keep chunks small to stay well within limits.
-    for (let i = 0; i < statements.length; i += 25) {
-      await database.batch(statements.slice(i, i + 25));
-    }
-  }
+  // Also handles a fresh/empty database. On existing deployments this performs
+  // the one-time 96xxx -> 200+ code migration and refreshes descriptions/images.
+  await ensureCatalog(database);
 }
 
 /**
