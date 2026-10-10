@@ -100,9 +100,6 @@ export default function ProductCard({
         <span className="stage-inner-shadow rounded-[1rem]" />
         <span className="stage-shine rounded-[1rem]" />
 
-        <span className="absolute right-2.5 top-2.5 rounded-full bg-[#0a1322]/85 px-2.5 py-1 text-[10px] font-bold text-amber-300 backdrop-blur">
-          کد {faNum(product.code)}
-        </span>
         {product.category && (
           <span className="absolute bottom-2.5 right-2.5 max-w-[62%] truncate rounded-full border border-slate-200/70 bg-white/90 px-2.5 py-1 text-[9px] font-bold text-slate-600 shadow-sm">
             {product.category}
@@ -170,7 +167,9 @@ export default function ProductCard({
         <p className="text-[9px] text-[var(--muted)]">
           تصویر نمایشی؛ ظاهر دقیق را پیش از خرید تأیید کنید
         </p>
-        <p className="line-clamp-2 min-h-[2.2rem] text-xs leading-5 text-[var(--muted)]">
+        {/* The product code is part of the description text instead of an
+            overlay on the photo; three lines keep it readable. */}
+        <p className="line-clamp-3 min-h-[2.2rem] text-xs leading-5 text-[var(--muted)]">
           {product.description || "بدون توضیحات"}
         </p>
         <div className="flex items-end justify-between gap-2 pt-1">

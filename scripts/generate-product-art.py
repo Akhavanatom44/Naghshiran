@@ -205,7 +205,6 @@ def drawing(visual, p):
 
 def svg_for(product):
     p = palette(product)
-    code = product["code"]
     title = html.escape(product["model"])
     illustration = drawing(product["visual"], p)
     return f'''<svg xmlns="http://www.w3.org/2000/svg" width="800" height="800" viewBox="0 0 800 800" role="img" aria-labelledby="title desc">
@@ -226,7 +225,7 @@ def svg_for(product):
 <path d="M96 618c140-37 460-38 608 0" fill="none" stroke="{p['accent']}" stroke-opacity=".12" stroke-width="3"/>
 <ellipse cx="400" cy="667" rx="230" ry="30" fill="#697b8e" opacity=".09"/>
 {illustration}
-<g font-family="Arial, sans-serif"><text x="48" y="63" fill="#82909e" font-size="17" font-weight="700" letter-spacing="3">NAGHSHIRAN  /  SURVEY EQUIPMENT</text><path d="M48 82h90" stroke="{p['accent']}" stroke-width="5" stroke-linecap="round"/><path d="M148 82h38" stroke="#2ab8c8" stroke-width="5" stroke-linecap="round"/><text x="752" y="752" text-anchor="end" fill="#53616e" font-size="21" font-weight="700" letter-spacing="1">{title}</text><text x="48" y="752" fill="#8b98a4" font-size="14" letter-spacing="2">NR-{code}</text></g>
+<g font-family="Arial, sans-serif"><text x="48" y="63" fill="#82909e" font-size="17" font-weight="700" letter-spacing="3">NAGHSHIRAN  /  SURVEY EQUIPMENT</text><path d="M48 82h90" stroke="{p['accent']}" stroke-width="5" stroke-linecap="round"/><path d="M148 82h38" stroke="#2ab8c8" stroke-width="5" stroke-linecap="round"/><text x="752" y="752" text-anchor="end" fill="#53616e" font-size="21" font-weight="700" letter-spacing="1">{title}</text></g>
 </svg>'''
 
 

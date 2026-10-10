@@ -62,7 +62,7 @@ async function main() {
       await assertSectionOrder(page);
       await expect(page.locator("#special-offers article")).toHaveCount(4);
       await expect(page.locator("#shop article")).toHaveCount(50);
-      await page.getByRole("searchbox").fill("۹۶۰۲۴");
+      await page.getByRole("searchbox").fill("۲۲۳");
       await expect(page.locator("#shop article")).toHaveCount(1);
       await expect(page.locator("#special-offers article")).toHaveCount(4);
       await assertSectionOrder(page);
@@ -77,7 +77,7 @@ async function main() {
     assert.ok(response.ok());
     const data = await response.json();
     const products: ProductForCard[] = data.products;
-    const battery = products.find((product) => product.code === 96024);
+    const battery = products.find((product) => product.code === 223);
     assert.ok(battery?.category);
     await page.getByRole("button", { name: battery.category, exact: true }).click();
     await expect(page.locator("#shop article")).toHaveCount(
@@ -113,15 +113,15 @@ async function main() {
     );
     await cartPage.goto(base + "/cart", { waitUntil: "networkidle" });
     const cartImage = cartPage.locator("main .product-stage img");
-    await expect(cartImage).toHaveAttribute("src", "/images/catalog/96024.webp");
+    await expect(cartImage).toHaveAttribute("src", "/images/catalog/223.webp");
     await expect.poll(() => cartImage.evaluate((image) => (image as HTMLImageElement).naturalWidth))
       .toBeGreaterThan(0);
 
-    await cartPage.route("**/images/catalog/96024.webp", (route) =>
+    await cartPage.route("**/images/catalog/223.webp", (route) =>
       route.fulfill({ status: 404, body: "" }),
     );
     await cartPage.reload({ waitUntil: "networkidle" });
-    await expect(cartImage).toHaveAttribute("src", "/images/catalog/96024.svg");
+    await expect(cartImage).toHaveAttribute("src", "/images/catalog/223.svg");
     await expect.poll(() => cartImage.evaluate((image) => (image as HTMLImageElement).naturalWidth))
       .toBeGreaterThan(0);
     await cartPage.close();
