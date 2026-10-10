@@ -1,14 +1,10 @@
+import { safeNextPath } from "@/lib/safe-next-path";
 import LoginForm from "@/components/LoginForm";
 
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;
 
 function first(value: string | string[] | undefined): string | undefined {
   return Array.isArray(value) ? value[0] : value;
-}
-
-function safeNextPath(value: string | undefined): string {
-  if (!value || !value.startsWith("/") || value.startsWith("//") || value.startsWith("/\\")) return "/";
-  return value;
 }
 
 export default async function LoginPage({ searchParams }: { searchParams: SearchParams }) {

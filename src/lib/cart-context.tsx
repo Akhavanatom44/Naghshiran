@@ -1,5 +1,12 @@
 "use client";
 
+import { usePathname } from "next/navigation";
+import {
+  addCartItem,
+  reconcileCart,
+  sanitizeCart,
+  setCartQuantity,
+} from "@/lib/cart-utils";
 import { CART_STORAGE_KEY } from "@/lib/cart-storage";
 import {
   createContext,
@@ -44,27 +51,14 @@ function readStoredCart(): CartItem[] {
   try {
     const raw = window.localStorage.getItem(CART_STORAGE_KEY);
     const value: unknown = raw ? JSON.parse(raw) : [];
-    if (!Array.isArray(value)) return [];
-
-    return value.filter((item): item is CartItem =>
-      typeof item === "object" &&
-      item !== null &&
-      Number.isInteger(item.productId) &&
-      Number.isInteger(item.code) &&
-      typeof item.name === "string" &&
-      typeof item.price === "number" &&
-      Number.isFinite(item.price) &&
-      typeof item.quantity === "number" &&
-      Number.isInteger(item.quantity) &&
-      item.quantity > 0 &&
-      typeof item.stock === "number"
-    );
+    return sanitizeCart(value);
   } catch {
     return [];
   }
 }
 
 export function CartProvider({ children }: { children: ReactNode }) {
+  const pathname = usePathname();
   const [items, setItems] = useState<CartItem[]>([]);
   const [hydrated, setHydrated] = useState(false);
   const [toast, setToast] = useState<CartToastState>(null);
@@ -79,7 +73,11 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (!hydrated) return;
-    window.localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(items));
+    try {
+      window.localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(items));
+    } catch {
+      /* Private browsing/quota: keep the in-memory cart usable. */
+    }
   }, [items, hydrated]);
 
   const showToast = useCallback((message: string) => {
@@ -88,18 +86,48 @@ export function CartProvider({ children }: { children: ReactNode }) {
     toastTimer.current = setTimeout(() => setToast(null), 1900);
   }, []);
 
-  const addItem: CartContextValue["addItem"] = (item, quantity = 1) => {
-    setItems((prev) => {
-      const existing = prev.find((p) => p.productId === item.productId);
-      if (existing) {
-        return prev.map((p) =>
-          p.productId === item.productId
-            ? { ...p, quantity: Math.min(p.quantity + quantity, Math.max(p.stock, 1) || 99) }
-            : p
+  useEffect(() => {
+    const controller = new AbortController();
+    const refreshProducts = async () => {
+      try {
+        const response = await fetch("/api/products", {
+          cache: "no-store",
+          signal: controller.signal,
+        });
+        if (!response.ok) return;
+        const data = await response.json();
+        if (data.databaseConfigured === false || !Array.isArray(data.products))
+          return;
+        setItems((prev) =>
+          reconcileCart(
+            prev,
+            data.products.map((p: { id: number }) => ({
+              ...p,
+              productId: p.id,
+            })),
+          ),
         );
+      } catch {
+        /* Keep the cart intact if the catalog is temporarily unavailable. */
       }
-      return [...prev, { ...item, quantity }];
-    });
+    };
+    void refreshProducts();
+    window.addEventListener("focus", refreshProducts);
+    return () => {
+      controller.abort();
+      window.removeEventListener("focus", refreshProducts);
+    };
+  }, [pathname]);
+
+  useEffect(
+    () => () => {
+      if (toastTimer.current) clearTimeout(toastTimer.current);
+    },
+    [],
+  );
+
+  const addItem: CartContextValue["addItem"] = (item, quantity = 1) => {
+    setItems((prev) => addCartItem(prev, item, quantity));
   };
 
   const removeItem = (productId: number) => {
@@ -107,15 +135,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
   };
 
   const updateQuantity = (productId: number, quantity: number) => {
-    setItems((prev) =>
-      prev
-        .map((p) =>
-          p.productId === productId
-            ? { ...p, quantity: Math.min(quantity, Math.max(p.stock, 1)) }
-            : p
-        )
-        .filter((p) => p.quantity > 0)
-    );
+    setItems((prev) => setCartQuantity(prev, productId, quantity));
   };
 
   const clearCart = () => setItems([]);
@@ -125,11 +145,11 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   const totalCount = useMemo(
     () => items.reduce((sum, item) => sum + item.quantity, 0),
-    [items]
+    [items],
   );
   const totalAmount = useMemo(
     () => items.reduce((sum, item) => sum + item.quantity * item.price, 0),
-    [items]
+    [items],
   );
 
   return (

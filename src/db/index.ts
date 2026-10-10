@@ -1,3 +1,4 @@
+import { CHECKOUT_SCHEMA } from "./checkout-schema";
 import { getCloudflareContext } from "@opennextjs/cloudflare";
 import { drizzle } from "drizzle-orm/d1";
 import * as schema from "./schema";
@@ -33,23 +34,37 @@ const SCHEMA_STATEMENTS: string[] = [
 ];
 
 // Remembered per Worker isolate so the checks run once, not on every request.
-let schemaReady: Promise<void> | null = null;
+const readyByDatabase = new WeakMap<D1Database, Promise<void>>();
 
 async function ensureSchema(database: D1Database) {
   // CREATE ... IF NOT EXISTS is safe to run repeatedly and also works on a
   // database that was created by `npm run db:push`.
-  await database.batch(SCHEMA_STATEMENTS.map((statement) => database.prepare(statement)));
+  await database.batch(
+    [...SCHEMA_STATEMENTS, ...CHECKOUT_SCHEMA].map((statement) =>
+      database.prepare(statement),
+    ),
+  );
 
   // Seed the catalog once when the products table is empty, so ordering works
   // without a manual `npm run db:seed`.
-  const countRow = await database.prepare("SELECT COUNT(*) AS n FROM products").first<{ n: number }>();
+  const countRow = await database
+    .prepare("SELECT COUNT(*) AS n FROM products")
+    .first<{ n: number }>();
   if (!countRow || Number(countRow.n) === 0) {
     const insert =
       "INSERT INTO products (code, name, description, category, price, image_url, is_active, stock) VALUES (?, ?, ?, ?, ?, ?, 1, ?) ON CONFLICT(code) DO NOTHING";
     const statements = CATALOG_PRODUCTS.map((product) =>
       database
         .prepare(insert)
-        .bind(product.code, product.name, product.description, product.category, product.price, product.imageUrl, product.stock)
+        .bind(
+          product.code,
+          product.name,
+          product.description,
+          product.category,
+          product.price,
+          product.imageUrl,
+          product.stock,
+        ),
     );
     // D1 allows large batches, but keep chunks small to stay well within limits.
     for (let i = 0; i < statements.length; i += 25) {
@@ -71,16 +86,23 @@ export async function getDb(): Promise<Database> {
   if (!env.DB) {
     throw new Error(
       "D1 binding `DB` is missing from the active Cloudflare Worker environment. " +
-        "Make sure wrangler.jsonc defines d1_naghshiran and the latest Worker deployment includes that binding."
+        "Make sure wrangler.jsonc defines d1_naghshiran and the latest Worker deployment includes that binding.",
     );
   }
 
-  if (!schemaReady) {
-    schemaReady = ensureSchema(env.DB).catch((error) => {
-      schemaReady = null; // retry on the next request
+  let ready = readyByDatabase.get(env.DB);
+  if (!ready) {
+    ready = ensureSchema(env.DB).catch((error) => {
+      readyByDatabase.delete(env.DB);
       throw error;
     });
+    readyByDatabase.set(env.DB, ready);
   }
-  await schemaReady;
+  await ready;
   return createDatabase(env.DB);
+}
+
+export async function getRawDb(): Promise<D1Database> {
+  await getDb();
+  return getCloudflareContext().env.DB;
 }

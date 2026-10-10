@@ -1,3 +1,4 @@
+import { presentProduct } from "@/lib/product-pricing";
 import { getDb } from "@/db";
 import { products } from "@/db/schema";
 import { eq, desc } from "drizzle-orm";
@@ -15,12 +16,13 @@ export async function GET() {
       .orderBy(desc(products.createdAt));
 
     return Response.json({
-      products: rows.length ? rows : CATALOG_PRODUCTS.map((product) => ({ ...product, canPurchase: false })),
+      products: rows.map(presentProduct),
+      databaseConfigured: true,
     });
   } catch (error) {
     console.warn("[products] using built-in catalog because the D1 database is unavailable", error);
     return Response.json({
-      products: CATALOG_PRODUCTS.map((product) => ({ ...product, canPurchase: false })),
+      products: CATALOG_PRODUCTS.map((product) => presentProduct({ ...product, canPurchase: false })),
       databaseConfigured: false,
     });
   }

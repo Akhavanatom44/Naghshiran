@@ -17,6 +17,8 @@ export type ProductForCard = {
   stock: number;
   category?: string;
   canPurchase?: boolean;
+  originalPrice?: number;
+  discountPercent?: number;
 };
 
 export default function ProductCard({
@@ -28,7 +30,13 @@ export default function ProductCard({
 }) {
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
-  const { addItem, updateQuantity, getQuantity, showToast, ready: cartReady } = useCart();
+  const {
+    addItem,
+    updateQuantity,
+    getQuantity,
+    showToast,
+    ready: cartReady,
+  } = useCart();
   const qty = getQuantity(product.id);
   const outOfStock = product.stock <= 0;
   const canPurchase = product.canPurchase !== false;
@@ -36,7 +44,9 @@ export default function ProductCard({
 
   const addOne = () => {
     if (!canPurchase) {
-      showToast("برای فعال‌سازی خرید، ابتدا کاتالوگ را به پایگاه داده متصل کنید");
+      showToast(
+        "برای فعال‌سازی خرید، ابتدا کاتالوگ را به پایگاه داده متصل کنید",
+      );
       return;
     }
     if (authLoading || !cartReady || outOfStock || atStockLimit) return;
@@ -50,8 +60,11 @@ export default function ProductCard({
         imageUrl: product.imageUrl,
         stock: product.stock,
       });
-      if (!saved) showToast("مرورگر اجازه‌ی ذخیره‌ی سبد را نداد؛ پس از ورود دوباره تلاش کنید");
-      router.push("/login?mode=register&next=%2Fcart");
+      if (!saved)
+        showToast(
+          "مرورگر اجازه‌ی ذخیره‌ی سبد را نداد؛ پس از ورود دوباره تلاش کنید",
+        );
+      router.push("/login?next=%2F");
       return;
     }
 
@@ -64,7 +77,7 @@ export default function ProductCard({
         imageUrl: product.imageUrl,
         stock: product.stock,
       },
-      1
+      1,
     );
     showToast(`«${product.name}» به سبد خرید اضافه شد`);
   };
@@ -85,10 +98,19 @@ export default function ProductCard({
             alt={`تصویر ${product.name}`}
             loading={index < 8 ? "eager" : "lazy"}
             decoding="async"
+            width={640}
+            height={640}
+            onError={(event) => {
+              const fallback = `/images/catalog/${product.code}.svg`;
+              if (event.currentTarget.getAttribute("src") !== fallback)
+                event.currentTarget.src = fallback;
+            }}
             className="mix-blend-multiply h-full w-full rounded-[1rem] object-contain p-2.5 sm:p-3.5"
           />
         ) : (
-          <div className="grid h-full w-full place-items-center text-5xl">🛍️</div>
+          <div className="grid h-full w-full place-items-center text-5xl">
+            🛍️
+          </div>
         )}
         <span className="stage-inner-shadow rounded-[1rem]" />
         <span className="stage-shine rounded-[1rem]" />
@@ -99,6 +121,11 @@ export default function ProductCard({
         {product.category && (
           <span className="absolute bottom-2.5 right-2.5 max-w-[62%] truncate rounded-full border border-slate-200/70 bg-white/90 px-2.5 py-1 text-[9px] font-bold text-slate-600 shadow-sm">
             {product.category}
+          </span>
+        )}
+        {!outOfStock && Boolean(product.discountPercent) && (
+          <span className="absolute left-2.5 top-2.5 rounded-full bg-rose-600 px-2.5 py-1 text-[11px] font-black text-white">
+            {faNum(product.discountPercent!)}٪ تخفیف
           </span>
         )}
         {outOfStock && (
@@ -113,7 +140,13 @@ export default function ProductCard({
               onClick={addOne}
               disabled={!canPurchase || authLoading || !cartReady}
               aria-label={`افزودن ${product.name} به سبد خرید`}
-              title={!canPurchase ? "پایگاه داده‌ی فروشگاه هنوز آماده نیست" : !user ? "برای افزودن، ابتدا ثبت‌نام یا وارد شوید" : "افزودن به سبد خرید"}
+              title={
+                !canPurchase
+                  ? "پایگاه داده‌ی فروشگاه هنوز آماده نیست"
+                  : !user
+                    ? "برای افزودن، ابتدا ثبت‌نام یا وارد شوید"
+                    : "افزودن به سبد خرید"
+              }
               className="add-btn disabled:cursor-wait disabled:opacity-70"
             >
               <PlusIcon className="h-5 w-5" />
@@ -122,7 +155,9 @@ export default function ProductCard({
             <div className="stepper-pill">
               <button
                 onClick={addOne}
-                disabled={!canPurchase || authLoading || !cartReady || atStockLimit}
+                disabled={
+                  !canPurchase || authLoading || !cartReady || atStockLimit
+                }
                 aria-label="افزودن یک عدد"
                 className="stepper-btn stepper-plus disabled:cursor-not-allowed disabled:opacity-40"
               >
@@ -147,15 +182,28 @@ export default function ProductCard({
         <h3 className="line-clamp-2 min-h-[2.7rem] text-sm font-extrabold leading-5 text-white sm:text-base sm:leading-6">
           {product.name}
         </h3>
+        <p className="text-[9px] text-[var(--muted)]">
+          تصویر نمایشی؛ ظاهر دقیق را پیش از خرید تأیید کنید
+        </p>
         <p className="line-clamp-2 min-h-[2.2rem] text-xs leading-5 text-[var(--muted)]">
           {product.description || "بدون توضیحات"}
         </p>
         <div className="flex items-end justify-between gap-2 pt-1">
           <div className="min-w-0">
+            {product.originalPrice && (
+              <del
+                className="block text-xs text-[var(--muted)]"
+                aria-label="قیمت قبل از تخفیف"
+              >
+                {product.originalPrice.toLocaleString("fa-IR")}
+              </del>
+            )}
             <span className="block whitespace-nowrap text-[15px] font-black text-amber-300 sm:text-lg">
               {product.price.toLocaleString("fa-IR")}
             </span>
-            <span className="text-[10px] font-bold text-[var(--muted)]">تومان</span>
+            <span className="text-[10px] font-bold text-[var(--muted)]">
+              تومان
+            </span>
           </div>
           {!outOfStock && (
             <span className="mb-0.5 flex shrink-0 items-center gap-1 text-[10px] font-bold text-emerald-300">

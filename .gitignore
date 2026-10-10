@@ -22,3 +22,6 @@ tsconfig.tsbuildinfo
 .DS_Store
 *.log
 .vercel
+
+# Downloadable patch archives
+delivery/*.zip

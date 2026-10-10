@@ -16,7 +16,7 @@ export default function CartPage() {
   function goCheckout() {
     if (loading || !ready) return;
     if (!user) {
-      router.push("/login?mode=register&next=%2Fcheckout");
+      router.push("/login?next=%2Fcheckout");
       return;
     }
     router.push("/checkout");
@@ -33,7 +33,7 @@ export default function CartPage() {
         imageUrl: item.imageUrl,
         stock: item.stock,
       });
-      router.push("/login?mode=register&next=%2Fcart");
+      router.push("/login?next=%2Fcart");
       return;
     }
     updateQuantity(item.productId, item.quantity + 1);

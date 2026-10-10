@@ -14,7 +14,9 @@ export const users = sqliteTable("users", {
   fullName: text("full_name", { length: 128 }),
   phone: text("phone", { length: 32 }),
   isAdmin: integer("is_admin", { mode: "boolean" }).notNull().default(false),
-  createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull().defaultNow(),
+  createdAt: integer("created_at", { mode: "timestamp_ms" })
+    .notNull()
+    .defaultNow(),
 });
 
 export const products = sqliteTable("products", {
@@ -29,8 +31,12 @@ export const products = sqliteTable("products", {
   imageUrl: text("image_url").notNull().default(""),
   isActive: integer("is_active", { mode: "boolean" }).notNull().default(true),
   stock: integer("stock").notNull().default(0),
-  createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull().defaultNow(),
-  updatedAt: integer("updated_at", { mode: "timestamp_ms" }).notNull().defaultNow(),
+  createdAt: integer("created_at", { mode: "timestamp_ms" })
+    .notNull()
+    .defaultNow(),
+  updatedAt: integer("updated_at", { mode: "timestamp_ms" })
+    .notNull()
+    .defaultNow(),
 });
 
 export const orders = sqliteTable("orders", {
@@ -46,9 +52,15 @@ export const orders = sqliteTable("orders", {
   address: text("address"),
   receiptImage: text("receipt_image").notNull(),
   adminNote: text("admin_note"),
-  telegramStatus: text("telegram_status", { length: 16 }).notNull().default("not_sent"), // not_sent | sent | failed
-  createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull().defaultNow(),
-  updatedAt: integer("updated_at", { mode: "timestamp_ms" }).notNull().defaultNow(),
+  telegramStatus: text("telegram_status", { length: 16 })
+    .notNull()
+    .default("not_sent"), // not_sent | sent | failed
+  createdAt: integer("created_at", { mode: "timestamp_ms" })
+    .notNull()
+    .defaultNow(),
+  updatedAt: integer("updated_at", { mode: "timestamp_ms" })
+    .notNull()
+    .defaultNow(),
 });
 
 export const orderItems = sqliteTable("order_items", {
@@ -61,4 +73,14 @@ export const orderItems = sqliteTable("order_items", {
   productCode: integer("product_code").notNull(),
   unitPrice: integer("unit_price").notNull(),
   quantity: integer("quantity").notNull(),
+});
+
+/** A committed submission makes network retries safe. */
+export const orderSubmissions = sqliteTable("order_submissions", {
+  requestKey: text("request_key").primaryKey().notNull(),
+  userId: integer("user_id").notNull(),
+  orderId: integer("order_id")
+    .notNull()
+    .references(() => orders.id, { onDelete: "cascade" }),
+  requestHash: text("request_hash").notNull(),
 });
