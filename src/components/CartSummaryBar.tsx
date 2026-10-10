@@ -44,7 +44,7 @@ export default function CartSummaryBar() {
           className="btn-primary shrink-0 rounded-xl px-3.5 py-2.5 text-xs sm:px-5 sm:text-sm"
         >
           <CheckIcon className="h-4 w-4" />
-          پرداخت
+          مشاهده سبد خرید
         </Link>
       </div>
     </aside>

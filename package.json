@@ -16,11 +16,12 @@
     "db:seed": "node scripts/seed-catalog.mjs --remote",
     "db:seed:local": "node scripts/seed-catalog.mjs --local",
     "catalog:images": "python3 scripts/generate-product-art.py && node scripts/catalog-image-manifest.mjs",
-    "test": "tsx --test tests/store.test.ts && python3 tests/checkout-db.test.py",
+    "test": "tsx --test tests/store.test.ts tests/seller.test.ts && python3 tests/checkout-db.test.py",
     "test:e2e": "tsx tests/browser-smoke.ts",
     "catalog:optimize": "node scripts/optimize-catalog-images.mjs && node scripts/catalog-image-manifest.mjs",
     "test:catalog": "tsx tests/catalog-browser.ts",
-    "deploy:fresh": "opennextjs-cloudflare build && opennextjs-cloudflare deploy"
+    "deploy:fresh": "opennextjs-cloudflare build && opennextjs-cloudflare deploy",
+    "test:seller": "tsx tests/seller-smoke.ts"
   },
   "dependencies": {
     "@types/bcryptjs": "^2.4.6",

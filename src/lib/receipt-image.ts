@@ -30,13 +30,13 @@ function loadImage(file: File): Promise<HTMLImageElement> {
  * quality until the data URL fits the server/D1 limit. Throws if the image
  * cannot be decoded or still does not fit after the smallest attempt.
  */
-export async function compressReceipt(file: File): Promise<string> {
+export async function compressReceipt(file: File, targetChars = TARGET_CHARS): Promise<string> {
   const image = await loadImage(file);
   const sourceWidth = image.naturalWidth;
   const sourceHeight = image.naturalHeight;
   if (!sourceWidth || !sourceHeight) throw new Error("decode");
 
-  for (const maxSide of [1600, 1200, 900]) {
+  for (const maxSide of [1600, 1200, 900, 640]) {
     const scale = Math.min(1, maxSide / Math.max(sourceWidth, sourceHeight));
     const width = Math.max(1, Math.round(sourceWidth * scale));
     const height = Math.max(1, Math.round(sourceHeight * scale));
@@ -52,7 +52,7 @@ export async function compressReceipt(file: File): Promise<string> {
 
     for (const quality of [0.85, 0.7, 0.55]) {
       const dataUrl = canvas.toDataURL("image/jpeg", quality);
-      if (dataUrl.length <= TARGET_CHARS) return dataUrl;
+      if (dataUrl.length <= targetChars) return dataUrl;
     }
   }
   throw new Error("too-large");

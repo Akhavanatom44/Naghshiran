@@ -568,3 +568,14 @@ body { isolation: isolate; }
   .product-card:hover .product-stage img { transform: none; }
   .product-card:hover .stage-shine { animation: none; }
 }
+
+/* A clear, full-width purchase action; the green glow is intentionally subtle. */
+.purchase-button {
+  color: #06291d;
+  background: linear-gradient(115deg, #6ee7b7, #34d399 48%, #10b981);
+  border: 1px solid rgb(110 231 183 / 65%);
+  box-shadow: 0 5px 22px -7px rgb(16 185 129 / 70%), inset 0 1px 0 rgb(255 255 255 / 25%);
+  transition: box-shadow .2s, filter .2s;
+}
+.purchase-button:hover:not(:disabled) { filter: brightness(1.08); box-shadow: 0 7px 26px -5px rgb(16 185 129 / 75%); }
+.purchase-button:focus-visible { outline: 3px solid #a7f3d0; outline-offset: 3px; }

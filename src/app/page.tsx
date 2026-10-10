@@ -24,7 +24,7 @@ export default async function HomePage() {
 
     if (rows.length === 0) {
       databaseIsEmpty = true;
-      items = CATALOG_PRODUCTS.map((product) => presentProduct({ ...product, canPurchase: false }));
+      items = [];
     } else {
       items = rows.map((product) => presentProduct({
         id: product.id,
@@ -35,6 +35,7 @@ export default async function HomePage() {
         imageUrl: product.imageUrl,
         stock: product.stock,
         category: product.category,
+        discountPercent: product.discountPercent,
       }));
     }
   } catch (error) {

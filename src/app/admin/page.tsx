@@ -1,18 +1,10 @@
-import AdminDashboard from "@/components/AdminDashboard";
-import AdminLogin from "@/components/AdminLogin";
+import SellerPanel from "@/components/SellerPanel";
 import { getCurrentUser } from "@/lib/auth";
-
+import { redirect } from "next/navigation";
 export const dynamic = "force-dynamic";
-
 export default async function AdminPage() {
-  let user = null;
-  try {
-    user = await getCurrentUser();
-  } catch {
-    // The login form can still initialize the D1 schema and bootstrap the
-    // manager account when the first request has no session yet.
-  }
-
-  if (!user?.isAdmin) return <AdminLogin />;
-  return <AdminDashboard />;
+  const user = await getCurrentUser(true);
+  if (!user) redirect("/login");
+  if (!user.isAdmin) redirect("/");
+  return <SellerPanel />;
 }

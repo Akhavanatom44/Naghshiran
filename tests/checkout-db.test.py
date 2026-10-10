@@ -85,4 +85,47 @@ class ProductCodeMigrationTests(unittest.TestCase):
         self.assertTrue(descriptions[1][0].startswith('کد محصول: ۲۰۱'))
 
 
+class SellerSchemaTests(unittest.TestCase):
+    def setUp(self):
+        self.db = sqlite3.connect(':memory:')
+        self.db.execute('PRAGMA foreign_keys=ON')
+        for migration in sorted(Path('drizzle').glob('*.sql')):
+            self.db.executescript(migration.read_text())
+        self.db.execute("INSERT INTO users(username,password_hash,is_admin) VALUES ('manager','hash',1), ('buyer','hash',0)")
+        self.db.execute("INSERT INTO products(code,name,price,stock,discount_percent) VALUES (999,'Test',100,3,20)")
+        self.db.commit()
+
+    def test_runtime_tables_match_migration_and_are_idempotent(self):
+        statements = re.findall(r'`([^`]+)`', Path('src/db/seller-schema.ts').read_text())
+        migration = Path('drizzle/0005_seller_panel.sql').read_text()
+        for statement in statements:
+            self.assertIn(statement+';', migration)
+            self.db.execute(statement)
+            self.db.execute(statement)
+        self.assertEqual(self.db.execute('SELECT discount_percent FROM products').fetchone()[0], 20)
+        self.assertEqual(self.db.execute('SELECT session_version FROM users WHERE id=1').fetchone()[0], 0)
+
+    def test_discount_change_during_checkout_rolls_back_order_and_stock(self):
+        # Run the exact atomic INSERT used by the route, with the older quote.
+        source = Path('src/app/api/orders/route.ts').read_text()
+        statement = next(q for q in re.findall(r'"(INSERT INTO order_items[^"\n]+)"', source) if 'discount_percent IS ?' in q)
+        self.db.execute('UPDATE products SET discount_percent=25 WHERE id=1')
+        self.db.commit()
+        with self.assertRaisesRegex(sqlite3.IntegrityError, 'CHECKOUT_PRICE_CHANGED'):
+            with self.db:
+                self.db.execute("INSERT INTO orders(user_id,total_amount,full_name,phone,delivery_method,receipt_image) VALUES (2,80,'Buyer','09131147897','pickup','image')")
+                self.db.execute("INSERT INTO order_submissions VALUES ('retry',2,last_insert_rowid(),'hash')")
+                self.db.execute(statement, ('retry',2,1,1,1,100,20,80,1,1))
+        self.assertEqual(self.db.execute('SELECT COUNT(*) FROM orders').fetchone()[0], 0)
+        self.assertEqual(self.db.execute('SELECT stock FROM products').fetchone()[0], 3)
+
+    def test_messages_have_recipient_ownership_and_read_state(self):
+        self.db.execute("INSERT INTO messages(recipient_id,sender_id,body,created_at) VALUES (2,1,'Thanks',1)")
+        self.assertEqual(self.db.execute('SELECT COUNT(*) FROM messages WHERE recipient_id=1').fetchone()[0], 0)
+        self.db.execute('UPDATE messages SET read_at=2 WHERE id=1 AND recipient_id=1')
+        self.assertIsNone(self.db.execute('SELECT read_at FROM messages').fetchone()[0])
+        self.db.execute('UPDATE messages SET read_at=2 WHERE id=1 AND recipient_id=2')
+        self.assertEqual(self.db.execute('SELECT read_at FROM messages').fetchone()[0], 2)
+
+
 if __name__ == '__main__': unittest.main()

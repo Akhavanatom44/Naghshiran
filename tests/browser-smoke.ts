@@ -25,6 +25,7 @@ async function main() {
     const suffix = Date.now().toString().slice(-8);
     const username = "test_" + suffix;
     const password = "validpassword123";
+    await page.locator("#register-name").fill("کاربر تست");
     await page.locator("#register-phone").fill("091" + suffix);
     await page.locator("#auth-username").fill(username);
     await page.locator("#auth-password").fill(password);
@@ -34,13 +35,13 @@ async function main() {
     await page.waitForURL(base + "/", { timeout: 30000 });
     await page.getByRole("searchbox").fill("۲۱۲");
     assert.equal(
-      await page.locator("#shop .stepper-pill span").textContent(),
+      await page.locator('#shop [role="group"] span').textContent(),
       "۱",
     );
     await page.reload({ waitUntil: "networkidle" });
     await page.getByRole("searchbox").fill("۲۱۲");
     assert.equal(
-      await page.locator("#shop .stepper-pill span").textContent(),
+      await page.locator('#shop [role="group"] span').textContent(),
       "۱",
     );
     const products = await (
@@ -92,9 +93,7 @@ async function main() {
 
     // Existing customers can choose login; the clicked product is restored too.
     await page.goto(base + "/account", { waitUntil: "networkidle" });
-    await page
-      .getByRole("button", { name: "خروج از حساب کاربری" })
-      .click();
+    await page.getByRole("button", { name: "خروج از حساب کاربری" }).click();
     await page.waitForURL(base + "/");
     await page.getByRole("searchbox").fill("213");
     await page.locator("#shop article button").click();
@@ -107,7 +106,7 @@ async function main() {
     await page.waitForURL(base + "/", { timeout: 30000 });
     await page.getByRole("searchbox").fill("213");
     assert.equal(
-      await page.locator("#shop .stepper-pill span").textContent(),
+      await page.locator('#shop [role="group"] span').textContent(),
       "۱",
       "login should add exactly one of the product the guest selected",
     );

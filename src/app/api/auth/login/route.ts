@@ -1,3 +1,4 @@
+import { reserveLoginAttempt } from "@/lib/login-limit";
 import { getDb } from "@/db";
 import { users } from "@/db/schema";
 import { sql } from "drizzle-orm";
@@ -51,6 +52,13 @@ export async function POST(req: Request) {
   const { username, password } = parsed.data;
   let user;
   try {
+    if (!(await reserveLoginAttempt(username, req)))
+      return Response.json(
+        {
+          error: "تعداد تلاش‌های ورود زیاد است؛ ۱۵ دقیقه دیگر دوباره تلاش کنید",
+        },
+        { status: 429, headers: { "Retry-After": "900" } },
+      );
     const db = await getDb();
     const rows = await db
       .select()
