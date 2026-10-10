@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCart } from "@/lib/cart-context";
@@ -17,10 +17,12 @@ export default function AccountPage() {
   const { user, loading, logout } = useAuth();
   const router = useRouter();
   const { clearCart, showToast } = useCart();
+  const [loggingOut, setLoggingOut] = useState(false);
 
   useEffect(() => {
-    if (!loading && !user) router.replace("/login?next=/account");
-  }, [loading, user, router]);
+    if (!loading && !user && !loggingOut)
+      router.replace("/login?next=/account");
+  }, [loading, user, loggingOut, router]);
 
   if (loading || !user) {
     return (
@@ -84,20 +86,23 @@ export default function AccountPage() {
         </div>
 
         <button
+          disabled={loggingOut}
           onClick={async () => {
+            setLoggingOut(true);
             try {
               await logout();
               clearCart();
-              router.push("/");
+              router.replace("/");
               router.refresh();
             } catch {
+              setLoggingOut(false);
               showToast("خروج انجام نشد؛ دوباره تلاش کنید");
             }
           }}
-          className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl border border-rose-400/30 bg-rose-500/10 py-3.5 text-sm font-black text-rose-300 transition hover:bg-rose-500/20"
+          className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl border border-rose-400/30 bg-rose-500/10 py-3.5 text-sm font-black text-rose-300 transition hover:bg-rose-500/20 disabled:cursor-wait disabled:opacity-60"
         >
           <LogOutIcon className="h-4.5 w-4.5" />
-          خروج از حساب کاربری
+          {loggingOut ? "در حال خروج..." : "خروج از حساب کاربری"}
         </button>
 
         <p className="mt-5 text-center text-[11px] leading-5 text-[var(--muted)]">
