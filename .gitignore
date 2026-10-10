@@ -25,3 +25,6 @@ tsconfig.tsbuildinfo
 
 # Downloadable patch archives
 delivery/*.zip
+
+# Local visual checks and scratch files
+.arena/
