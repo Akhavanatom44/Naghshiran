@@ -68,7 +68,17 @@ export default function AccountPage() {
           )}
         </div>
 
-        <div className="mt-7 grid gap-3 sm:grid-cols-2">
+        {user.isAdmin && (
+          <Link
+            href="/admin"
+            className="mt-7 flex items-center justify-center gap-2 rounded-xl border border-amber-400/35 bg-amber-400/10 py-3.5 text-sm font-black text-amber-200 transition hover:bg-amber-400/20"
+          >
+            <ShieldIcon className="h-4.5 w-4.5" />
+            ورود به پنل مدیریت فروشگاه
+          </Link>
+        )}
+
+        <div className={`${user.isAdmin ? "mt-3" : "mt-7"} grid gap-3 sm:grid-cols-2`}>
           <Link
             href="/orders"
             className="btn-outline flex items-center justify-center gap-2 rounded-xl py-3.5 text-sm"

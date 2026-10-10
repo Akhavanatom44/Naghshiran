@@ -7,6 +7,7 @@ import { AuthProvider } from "@/lib/auth-context";
 import Navbar from "@/components/Navbar";
 import MobileNav from "@/components/MobileNav";
 import CartToast from "@/components/CartToast";
+import CartSummaryBar from "@/components/CartSummaryBar";
 import Footer from "@/components/Footer";
 import GlowBackground from "@/components/GlowBackground";
 
@@ -57,6 +58,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
             <div className="min-h-[70vh]">{children}</div>
             <Footer />
             <MobileNav />
+            <CartSummaryBar />
             <CartToast />
           </CartProvider>
         </AuthProvider>

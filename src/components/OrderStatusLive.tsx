@@ -49,6 +49,11 @@ export default function OrderStatusLive({ orderId, initialStatus, initialNote }:
             <p className="mt-1.5 text-sm leading-7 text-emerald-100/90">
               خرید شما توسط ادمین‌های ما تأیید شد و به‌زودی با شما تماس خواهند گرفت.
             </p>
+            {note && (
+              <p className="mt-2 rounded-xl bg-emerald-400/10 px-3 py-2 text-xs leading-6 text-emerald-100/80">
+                پیام فروشگاه: {note}
+              </p>
+            )}
           </div>
         </div>
       </div>

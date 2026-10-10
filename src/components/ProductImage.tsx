@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { catalogImageUrl } from "@/data/catalog";
+import { CATALOG_PLACEHOLDER_IMAGE, catalogImageUrl } from "@/data/catalog";
 
 type ProductImageProps = {
   code: number;
@@ -26,7 +26,12 @@ export default function ProductImage({
   const catalogSource = catalogImageUrl(code);
   const illustration = `/images/catalog/${code}.svg`;
   const requested = imageUrl?.trim() || catalogSource;
-  const sources = [...new Set([requested, catalogSource, illustration])];
+  // A stale custom URL must never leave a broken image icon in a product
+  // card. The final local placeholder also covers new DB products that do not
+  // have a code-specific asset yet.
+  const sources = [
+    ...new Set([requested, catalogSource, illustration, CATALOG_PLACEHOLDER_IMAGE]),
+  ];
   const [failedSources, setFailedSources] = useState<string[]>([]);
   const source =
     sources.find((candidate) => !failedSources.includes(candidate)) ?? illustration;

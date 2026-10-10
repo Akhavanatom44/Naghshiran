@@ -50,6 +50,7 @@ export const orders = sqliteTable("orders", {
   phone: text("phone", { length: 32 }).notNull(),
   deliveryMethod: text("delivery_method", { length: 16 }).notNull(), // ship | pickup
   address: text("address"),
+  customerNote: text("customer_note"),
   receiptImage: text("receipt_image").notNull(),
   adminNote: text("admin_note"),
   telegramStatus: text("telegram_status", { length: 16 })

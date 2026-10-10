@@ -41,6 +41,7 @@ export const checkoutSchema = z
       }),
     deliveryMethod: z.enum(["ship", "pickup"]),
     address: z.string().trim().max(500).optional().nullable(),
+    customerNote: z.string().trim().max(1000).optional().nullable(),
     receiptImage: z
       .string()
       .max(

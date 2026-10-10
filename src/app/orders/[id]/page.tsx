@@ -106,6 +106,13 @@ export default async function OrderDetailPage({
           </div>
         </div>
 
+        {order.customerNote && (
+          <div className="mt-6 rounded-2xl border border-teal-400/20 bg-teal-400/5 p-4 text-sm leading-7">
+            <p className="font-black text-teal-200">توضیحات شما برای فروشگاه</p>
+            <p className="mt-1 text-[var(--muted)]">{order.customerNote}</p>
+          </div>
+        )}
+
         <div className="mt-6">
           <p className="mb-2.5 text-sm font-black text-white">اقلام سفارش</p>
           <div className="space-y-2">

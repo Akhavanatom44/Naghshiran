@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640" role="img" aria-labelledby="title desc">
+  <title id="title">تصویر محصول نقشیران</title>
+  <desc id="desc">تصویر نمایشی محصول تجهیزات نقشه‌برداری</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#f8fafc"/>
+      <stop offset="1" stop-color="#dbe6f1"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#ffb020"/>
+      <stop offset="1" stop-color="#ff6a00"/>
+    </linearGradient>
+  </defs>
+  <rect width="640" height="640" rx="48" fill="url(#bg)"/>
+  <circle cx="320" cy="280" r="142" fill="#0a1322" opacity=".08"/>
+  <path d="M210 400h220M244 360h152M280 220h80l36 140H244z" fill="none" stroke="#0a1322" stroke-width="18" stroke-linejoin="round" opacity=".72"/>
+  <circle cx="320" cy="280" r="48" fill="url(#accent)"/>
+  <path d="M320 250v60M290 280h60" stroke="#1c0e00" stroke-width="12" stroke-linecap="round"/>
+  <text x="320" y="492" fill="#334155" font-family="Arial, sans-serif" font-size="27" font-weight="700" text-anchor="middle">تصویر محصول</text>
+  <text x="320" y="530" fill="#64748b" font-family="Arial, sans-serif" font-size="18" text-anchor="middle">نقشیران</text>
+</svg>

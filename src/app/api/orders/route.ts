@@ -29,6 +29,7 @@ export async function GET() {
         phone: orders.phone,
         deliveryMethod: orders.deliveryMethod,
         address: orders.address,
+        customerNote: orders.customerNote,
         adminNote: orders.adminNote,
         createdAt: orders.createdAt,
         updatedAt: orders.updatedAt,
@@ -190,7 +191,7 @@ export async function POST(req: Request) {
       await rawDb.batch([
         rawDb
           .prepare(
-            "INSERT INTO orders (user_id, status, total_amount, full_name, phone, delivery_method, address, receipt_image) VALUES (?, 'pending', ?, ?, ?, ?, ?, ?)",
+            "INSERT INTO orders (user_id, status, total_amount, full_name, phone, delivery_method, address, customer_note, receipt_image) VALUES (?, 'pending', ?, ?, ?, ?, ?, ?, ?)",
           )
           .bind(
             user.id,
@@ -199,6 +200,7 @@ export async function POST(req: Request) {
             data.phone,
             data.deliveryMethod,
             data.deliveryMethod === "ship" ? data.address : null,
+            data.customerNote ?? null,
             data.receiptImage,
           ),
         rawDb
