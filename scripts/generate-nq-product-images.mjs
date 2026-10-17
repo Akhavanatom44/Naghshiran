@@ -9,7 +9,8 @@
  *   - Square canvas, product fills ~80-85%, centred, soft contact shadow.
  *   - 3 views per product: main (3/4 front), side, box (with standard
  *     in-box accessories: hard case, battery, charger, tribrach, cables).
- *   - Files: public/images/products/<SKU>/<SKU>_<view>.png  (2000x2000 master)
+ *   - Files: public/images/products/<SKU>/<SKU>_<view>.png  (2000x2000 fallback art;
+ *            2048x2048 AI-photo master where listed in AI_PHOTO_VIEWS)
  *            public/images/products/<SKU>/<SKU>_<view>.webp (1000x1000 web)
  *            public/images/products/<SKU>/<SKU>_<view>.jpg  (500x500 thumb)
  *   - The `main` view is also written to the catalog slots the storefront
@@ -34,6 +35,17 @@ const catalog = JSON.parse(
   readFileSync(path.join(root, "src/data/catalog.json"), "utf8"),
 );
 const products = catalog.filter((p) => p.sku);
+
+// AI-generated photorealistic views are checked into the product folders.
+// Preserve these instead of replacing them with the fallback SVG artwork when
+// this script is rerun; still rebuild their responsive/export derivatives.
+const AI_PHOTO_VIEWS = new Set([
+  "NQ-001_main", "NQ-001_side",
+  "NQ-002_main", "NQ-002_side",
+  "NQ-003_main", "NQ-003_side",
+  "NQ-004_main", "NQ-004_side",
+  "NQ-005_main", "NQ-006_main", "NQ-007_main", "NQ-008_main",
+]);
 
 const PALETTES = {
   leica: {
@@ -177,8 +189,25 @@ for (const product of products) {
   const dir = path.join(root, "public/images/products", product.sku);
   mkdirSync(dir, { recursive: true });
   for (const view of ["main", "side", "box"]) {
-    const svg = Buffer.from(svgFor(product, view));
     const base = path.join(dir, `${product.sku}_${view}`);
+
+    if (AI_PHOTO_VIEWS.has(`${product.sku}_${view}`)) {
+      // The 2048px PNG is the master photo; never overwrite it with fallback art.
+      const photo = `${base}.png`;
+      await sharp(photo).resize(1000, 1000, { fit: "contain", background: "#ffffff" })
+        .webp({ quality: 88, effort: 6 }).toFile(`${base}.webp`);
+      await sharp(photo).resize(500, 500, { fit: "contain", background: "#ffffff" })
+        .jpeg({ quality: 88 }).toFile(`${base}.jpg`);
+      if (view === "main") {
+        await sharp(photo).resize(1024, 1024, { fit: "contain", background: "#ffffff" })
+          .jpeg({ quality: 90 }).toFile(path.join(root, `public/images/catalog/${product.code}.jpg`));
+        await sharp(photo).resize(640, 640, { fit: "contain", background: "#ffffff" })
+          .webp({ quality: 82, effort: 6 }).toFile(path.join(root, `public/images/catalog/${product.code}.webp`));
+      }
+      continue;
+    }
+
+    const svg = Buffer.from(svgFor(product, view));
     await sharp(svg).resize(2000, 2000).png().toFile(`${base}.png`);
     await sharp(svg).resize(1000, 1000).webp({ quality: 88, effort: 6 }).toFile(`${base}.webp`);
     await sharp(svg).resize(500, 500).jpeg({ quality: 88 }).toFile(`${base}.jpg`);
@@ -191,4 +220,4 @@ for (const product of products) {
   }
   console.log(`${product.sku} (code ${product.code}): main/side/box written`);
 }
-console.log(`Done: ${products.length} products x 3 views (PNG 2000 + WebP 1000 + JPG 500).`);
+console.log(`Done: ${products.length} products x 3 views (AI photos preserved; fallback art exported to PNG 2000 + WebP 1000 + JPG 500).`);
