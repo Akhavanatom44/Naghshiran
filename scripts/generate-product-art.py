@@ -11,6 +11,12 @@ OUT = ROOT / "public/images/catalog"
 
 def palette(product):
     name = product["name"].lower()
+    if "نیکون" in name or "nikon" in name:
+        return {"accent": "#17a2b1", "accent2": "#5cc6d2", "dark": "#17323a"}
+    if "ساندینگ" in name or "sanding" in name:
+        return {"accent": "#84a874", "accent2": "#a9c79b", "dark": "#31402f"}
+    if "لایکا" in name or "leica" in name:
+        return {"accent": "#a9c09e", "accent2": "#c3d4b6", "dark": "#31402f"}
     if "دیوالت" in name or "dewalt" in name:
         return {"accent": "#e7b91f", "accent2": "#ffcf35", "dark": "#242a30"}
     if "ماکیتا" in name or "makita" in name:

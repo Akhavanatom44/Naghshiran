@@ -61,7 +61,7 @@ async function main() {
       await page.goto(base, { waitUntil: "networkidle" });
       await assertSectionOrder(page);
       await expect(page.locator("#special-offers article")).toHaveCount(4);
-      await expect(page.locator("#shop article")).toHaveCount(50);
+      await expect(page.locator("#shop article")).toHaveCount(58);
       await page.getByRole("searchbox").fill("۲۲۳");
       await expect(page.locator("#shop article")).toHaveCount(1);
       await expect(page.locator("#special-offers article")).toHaveCount(4);
@@ -70,7 +70,7 @@ async function main() {
       await expect(page.locator("#shop article")).toHaveCount(0);
       await assertSectionOrder(page);
       await page.getByRole("button", { name: "نمایش همه محصولات" }).click();
-      await expect(page.locator("#shop article")).toHaveCount(50);
+      await expect(page.locator("#shop article")).toHaveCount(58);
     }
 
     const response = await page.request.get(base + "/api/products");
@@ -132,7 +132,7 @@ async function main() {
     assert.ok(imageResponses.every((imageResponse) => imageResponse.ok()));
     assert.deepEqual(errors, []);
     console.log(
-      "PASS: exact introduction → discounted products → all products at 320/390/1440px, independent search/category/sort, all 50 images, stale photo → catalog WebP → SVG fallback, no JS errors",
+      "PASS: exact introduction → discounted products → all products at 320/390/1440px, independent search/category/sort, all 58 images, stale photo → catalog WebP → SVG fallback, no JS errors",
     );
   } finally {
     await browser.close();

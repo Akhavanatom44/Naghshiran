@@ -166,6 +166,14 @@ export async function POST(req: Request) {
           { status: 409 },
         );
       }
+      if (product.price <= 0) {
+        return Response.json(
+          {
+            error: `قیمت «${product.name}» استعلامی است؛ برای خرید با فروشگاه تماس بگیرید`,
+          },
+          { status: 409 },
+        );
+      }
       totalAmount += sellingPrice(product.code, product.price, product.discountPercent) * item.quantity;
       itemsForInsert.push({
         productId: product.id,

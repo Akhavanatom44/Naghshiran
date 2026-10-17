@@ -75,7 +75,9 @@ const productStatements = catalog.map((product) => {
       price,
       `'${imageUrl}'`,
       "1",
-      "99",
+      // One-off instruments (NQ-001..NQ-008) carry their real quantity (1);
+      // the original listings keep the default sellable cap.
+      String(product.stock ?? 99),
     ].join(", ") +
     // Re-seeding must refresh built-in metadata without resetting a live price,
     // reserved stock, active status or a custom merchant photo.

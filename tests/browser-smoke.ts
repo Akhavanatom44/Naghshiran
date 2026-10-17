@@ -123,7 +123,7 @@ async function main() {
     );
     assert.deepEqual(errors, []);
     console.log(
-      "PASS: guest browse → signup auto-login +1 → existing-account login +1, all 50 image routes, checkout retry safety, no overflow or JS errors",
+      "PASS: guest browse → signup auto-login +1 → existing-account login +1, all 58 image routes, checkout retry safety, no overflow or JS errors",
     );
   } finally {
     await browser.close();

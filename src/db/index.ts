@@ -31,7 +31,7 @@ export type Database = ReturnType<typeof createDatabase>;
 const NOW_MS = "(CAST((julianday('now') - 2440587.5) * 86400000 AS INTEGER))";
 
 /** Bump when built-in catalog metadata needs a one-time D1 refresh. */
-const CATALOG_DATA_VERSION = "codes-200-v2";
+const CATALOG_DATA_VERSION = "codes-200-257-v3";
 const CATALOG_VERSION_KEY = "catalog_data_version";
 
 const SCHEMA_STATEMENTS: string[] = [

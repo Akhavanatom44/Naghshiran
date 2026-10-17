@@ -147,7 +147,7 @@ test("retry fingerprint ignores request key, not changed details", async () => {
 test("catalog codes are consecutive from 200 and live in descriptions, not images", () => {
   assert.deepEqual(
     CATALOG_PRODUCTS.map((item) => item.code),
-    Array.from({ length: 50 }, (_, index) => 200 + index),
+    Array.from({ length: 58 }, (_, index) => 200 + index),
   );
   for (const item of CATALOG_PRODUCTS) {
     assert.ok(
@@ -163,12 +163,29 @@ test("catalog codes are consecutive from 200 and live in descriptions, not image
   }
 });
 
+test("NQ-001..NQ-008 one-off instruments keep serial, stock and gallery", () => {
+  const nq = CATALOG_PRODUCTS.filter((item) => item.code >= 250);
+  assert.equal(nq.length, 8);
+  for (const [index, item] of nq.entries()) {
+    const sku = `NQ-00${index + 1}`;
+    assert.ok(item.description.includes(sku), `${sku} missing from ${item.code}`);
+    assert.equal(item.stock, 1, `${sku} must be a single unit`);
+    assert.equal(item.price, 0, `${sku} stays price-on-request until priced`);
+    assert.ok(existsSync(`public/images/products/${sku}/${sku}_main.webp`));
+    assert.ok(existsSync(`public/images/products/${sku}/${sku}_side.webp`));
+    assert.ok(existsSync(`public/images/products/${sku}/${sku}_box.webp`));
+  }
+  assert.ok(nq[0].description.includes("1373523"));
+  assert.ok(nq[4].description.includes("SD71014"));
+  assert.ok(nq[6].description.includes("050861"));
+});
+
 test("every catalog code resolves to a real, decodable local image", async () => {
   const images = JSON.parse(
     readFileSync("src/data/catalog-images.json", "utf8"),
   );
   const catalog = JSON.parse(readFileSync("src/data/catalog.json", "utf8"));
-  assert.equal(catalog.length, 50);
+  assert.equal(catalog.length, 58);
   for (const p of catalog) {
     const imagePath = `public${images[p.code]}`;
     assert.ok(existsSync(imagePath), `Missing ${p.code}`);

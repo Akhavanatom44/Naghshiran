@@ -53,8 +53,13 @@ export const CATALOG_PRODUCTS: CatalogProduct[] = rawCatalog.map((product) => ({
   description: withProductCode(product.description, product.code),
   price: adjustedCatalogPrice(product.sourcePrice),
   imageUrl: catalogImageUrl(product.code),
-  // Inventory quantities were not part of the supplied listing; this initial
-  // sellable cap can be changed in the inventory/database independently.
-  stock: 99,
+  // Inventory quantities were not part of the original supplied listing; this
+  // initial sellable cap can be changed in the inventory/database
+  // independently. Listings that do state a quantity (e.g. the one-off
+  // NQ-001..NQ-008 instruments, stock: 1) keep that exact stock.
+  stock:
+    typeof (product as { stock?: unknown }).stock === "number"
+      ? (product as { stock: number }).stock
+      : 99,
   category: product.category,
 }));

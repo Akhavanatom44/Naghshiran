@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useCart } from "@/lib/cart-context";
 import { useAuth } from "@/lib/auth-context";
-import { faNum } from "@/lib/format";
+import { faNum, STORE_PHONE_TEL } from "@/lib/format";
 import { savePendingCartProduct } from "@/lib/cart-storage";
 import ProductImage from "@/components/ProductImage";
 import { MinusIcon, PlusIcon } from "@/components/icons";
@@ -39,6 +39,9 @@ export default function ProductCard({
     ready: cartReady,
   } = useCart();
   const qty = getQuantity(product.id);
+  // One-off instruments whose price the shop has not set yet are shown as
+  // "استعلام قیمت" instead of a fake 0 تومان price and cannot be ordered.
+  const priceOnRequest = product.price <= 0;
   const outOfStock = product.stock <= 0;
   const canPurchase = product.canPurchase !== false;
   const atStockLimit = qty >= Math.min(product.stock, 99);
@@ -140,14 +143,24 @@ export default function ProductCard({
               </del>
             )}
             <span className="whitespace-nowrap text-[15px] font-black text-amber-300 sm:text-lg">
-              {faNum(product.price)}
+              {priceOnRequest ? "استعلام قیمت" : faNum(product.price)}
             </span>
           </div>
-          <span className="pb-1 text-xs font-bold text-[var(--muted)]">
-            تومان
-          </span>
+          {!priceOnRequest && (
+            <span className="pb-1 text-xs font-bold text-[var(--muted)]">
+              تومان
+            </span>
+          )}
         </div>
-        {qty === 0 ? (
+        {priceOnRequest ? (
+          <a
+            href={STORE_PHONE_TEL}
+            aria-label={`استعلام قیمت ${product.name}`}
+            className="purchase-button block w-full rounded-xl py-3 text-center text-sm font-black"
+          >
+            برای استعلام قیمت تماس بگیرید
+          </a>
+        ) : qty === 0 ? (
           <button
             onClick={addOne}
             disabled={outOfStock || !canPurchase || authLoading || !cartReady}
