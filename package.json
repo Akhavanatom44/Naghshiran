@@ -21,7 +21,8 @@
     "catalog:optimize": "node scripts/optimize-catalog-images.mjs && node scripts/catalog-image-manifest.mjs",
     "test:catalog": "tsx tests/catalog-browser.ts",
     "deploy:fresh": "opennextjs-cloudflare build && opennextjs-cloudflare deploy",
-    "test:seller": "tsx tests/seller-smoke.ts"
+    "test:seller": "tsx tests/seller-smoke.ts",
+    "catalog:nq-images": "node scripts/generate-nq-product-images.mjs"
   },
   "dependencies": {
     "@types/bcryptjs": "^2.4.6",
